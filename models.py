@@ -9,6 +9,7 @@ The implementation of the models is inspired by the scikit-learn library
 import numpy as np
 
 from scipy import linalg
+from scipy.special import expit
 
 from utils import *
 
@@ -84,6 +85,66 @@ class KernelRidgeClassifier(KernelModel):
                 a=Wsqrt @ K @ Wsqrt + n * self.alpha_ * np.eye(n),
                 b=Wsqrt.dot(y),
                 assume_a='pos')
+        self.X_fit_ = X
+        return self
+
+    def decision_function(self, X):
+        K = self._gram_matrix(X, self.X_fit_)
+        return np.dot(K, self.dual_coef_)
+
+    def predict(self, X):
+        scores = self.decision_function(X)
+        return np.asarray((scores > 0).astype(int))
+
+
+class KernelLogisticClassifier(KernelModel):
+    """
+    Binary Logistic classifier model using kernel methods. This classifier
+    first converts the target values into {-1, 1} and then treats the
+    problem as a regression task.
+    """
+
+    def __init__(self, alpha=1, kernel=linear_kernel):
+        self.alpha_ = alpha
+        self.dual_coef_ = None
+        self.X_fit_ = None
+        super().__init__(kernel=kernel)
+
+    def fit(self, X, y, tol=1e-4, max_iter=100):
+        """
+        Compute self.dual_coef c to minimize:
+        1/n sum_i^n log(1 + exp(-y_i * K@c_i)) + alpha / 2 * c.T @ K @ c.
+        """
+        y = binary_regression_labels(y)
+        K = self._gram_matrix(X, X)
+        n, _ = X.shape
+
+        coef = np.zeros(n)
+        for it in range(max_iter):
+
+            # Update variables
+            prev_coef = coef
+            m = K @ coef
+            P = -expit(- y * m)
+            W = expit(y * m) * expit(-y * m)
+            z = m - P * y / W
+
+            # Solve Weighted Kernel Ridge Regression problem
+            Wsqrt = np.diag(np.sqrt(W))
+            coef = Wsqrt @ linalg.solve(
+                a=Wsqrt @ K @ Wsqrt + n * self.alpha_ * np.eye(n),
+                b=Wsqrt.dot(z),
+                assume_a='pos')
+
+            if np.linalg.norm(prev_coef - coef) < tol:
+                break
+
+            if it == max_iter - 1:
+                print(
+                    f"Maximum iteration {max_iter} reached in "
+                    f"{self.__class__.__name__} fit method.")
+
+        self.dual_coef_ = coef
         self.X_fit_ = X
         return self
 

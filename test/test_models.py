@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 from numpy import testing
 
-from models import KernelModel, KernelRidgeClassifier
+from models import KernelLogisticClassifier, KernelModel, KernelRidgeClassifier
 
 
 class TestKernelModel(TestCase):
@@ -63,3 +63,39 @@ class TestKernelRidgeClassifier(TestCase):
         testing.assert_almost_equal(
             self.model.predict(np.vstack([1, -1])),
             np.array([1, 0]))
+
+
+class TestKernelLogisticClassifier(TestCase):
+    def setUp(self):
+        self.model = KernelLogisticClassifier(alpha=2)
+
+    def test_fit_1d(self):
+        X = np.vstack([1])
+        y = np.array([1])
+
+        self.assertIsNone(self.model.X_fit_)
+        self.assertIsNone(self.model.dual_coef_)
+
+        self.assertIsNotNone(self.model.fit(X, y))
+        testing.assert_equal(self.model.X_fit_, X)
+
+        # obtained using WolframAlpha
+        expected_dual_coef = 0.2223234712
+        testing.assert_almost_equal(self.model.dual_coef_,
+                                    expected_dual_coef)
+
+    def test_fit_2d(self):
+        # We make sure that X is such that X @ X.T is spd such that the problem
+        # is stritly convex and there is a unique solution.
+        X = np.array([[1, 2], [6, 6]])
+        y = np.array([0, 1])
+
+        self.assertIsNone(self.model.X_fit_)
+        self.assertIsNone(self.model.dual_coef_)
+
+        self.assertIsNotNone(self.model.fit(X, y))
+        testing.assert_equal(self.model.X_fit_, X)
+
+        # obtained using cvxpy in script.py
+        expected_dual_coef = np.array([-0.14089595, 0.05334446])
+        testing.assert_almost_equal(self.model.dual_coef_, expected_dual_coef)
