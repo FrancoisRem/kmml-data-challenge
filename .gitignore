@@ -1,2 +1,3 @@
 # Pycharm project file.
 .idea*
+__pycache__/
