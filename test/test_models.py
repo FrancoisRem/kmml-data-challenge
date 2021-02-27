@@ -3,7 +3,8 @@ from unittest import TestCase
 import numpy as np
 from numpy import testing
 
-from models import KernelLogisticClassifier, KernelModel, KernelRidgeClassifier
+from models import KernelLogisticClassifier, KernelModel, KernelRidgeClassifier, \
+    LinearKernelBinaryClassifier
 
 
 class TestKernelModel(TestCase):
@@ -15,6 +16,37 @@ class TestKernelModel(TestCase):
                                               [18., 12., 72., -30., 42.],
                                               [0., 55., -30., 125., -70.],
                                               [7., -21., 42., -70., 49.]]))
+
+
+class TestLinearKernelBinaryClassifier(TestCase):
+    def setUp(self):
+        self.model = LinearKernelBinaryClassifier()
+
+    def test_assert_is_fitted_not_fitted(self):
+        self.assertRaises(ValueError, self.model.assert_is_fitted)
+
+    def test_assert_is_fitted_is_fitted(self):
+        self.model.X_fit_ = 0
+        self.model.dual_coef_ = 0
+        try:
+            self.model.assert_is_fitted()
+        except ValueError:
+            self.fail("assert_is_fitted() raised ValueError unexpectedly!")
+
+    def test_decision_function(self):
+        self.model.X_fit_ = np.vstack([1, 2])
+        self.model.dual_coef_ = np.array([3, 5])
+        testing.assert_almost_equal(
+            self.model.decision_function(np.vstack([1, -1])),
+            np.array(
+                [3 * 1 + 5 * 2, 3 * (-1) + 5 * (-2)]))
+
+    def test_predict(self):
+        self.model.X_fit_ = np.vstack([1, 2])
+        self.model.dual_coef_ = np.array([3, 5])
+        testing.assert_almost_equal(
+            self.model.predict(np.vstack([1, -1])),
+            np.array([1, 0]))
 
 
 class TestKernelRidgeClassifier(TestCase):
@@ -48,21 +80,6 @@ class TestKernelRidgeClassifier(TestCase):
         expected_dual_coef = np.array(
             [0.0709017, 0.303963, -0.13714155, -0.17329913, -0.02791378])
         testing.assert_almost_equal(self.model.dual_coef_, expected_dual_coef)
-
-    def test_decision_function(self):
-        self.model.X_fit_ = np.vstack([1, 2])
-        self.model.dual_coef_ = np.array([3, 5])
-        testing.assert_almost_equal(
-            self.model.decision_function(np.vstack([1, -1])),
-            np.array(
-                [3 * 1 + 5 * 2, 3 * (-1) + 5 * (-2)]))
-
-    def test_predict(self):
-        self.model.X_fit_ = np.vstack([1, 2])
-        self.model.dual_coef_ = np.array([3, 5])
-        testing.assert_almost_equal(
-            self.model.predict(np.vstack([1, -1])),
-            np.array([1, 0]))
 
 
 class TestKernelLogisticClassifier(TestCase):

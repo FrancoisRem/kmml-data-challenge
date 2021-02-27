@@ -50,7 +50,38 @@ class KernelModel:
         return K
 
 
-class KernelRidgeClassifier(KernelModel):
+class LinearKernelBinaryClassifier(KernelModel):
+    """
+    Base class for Kernel Binary Classifiers using a linear decision_function
+    which is the weighted sum of the kernel product between learnt vectors
+    X_fits[i] and query vectors X[i], the weights are contained in the learnt
+    vector dual_coef_.
+    """
+
+    def __init__(self, kernel=linear_kernel):
+        """
+        :param kernel: see KernelModel doc
+        """
+        self.X_fit_ = None
+        self.dual_coef_ = None
+        super().__init__(kernel=kernel)
+
+    def decision_function(self, X):
+        self.assert_is_fitted()
+        K = self._gram_matrix(X, self.X_fit_)
+        return np.dot(K, self.dual_coef_)
+
+    def predict(self, X):
+        self.assert_is_fitted()
+        scores = self.decision_function(X)
+        return np.asarray((scores > 0).astype(int))
+
+    def assert_is_fitted(self):
+        if self.X_fit_ is None or self.dual_coef_ is None:
+            raise ValueError(f"{self.__class__.__name__} is not fitted.")
+
+
+class KernelRidgeClassifier(LinearKernelBinaryClassifier):
     """
     Binary Ridge classifier model using kernel methods. This classifier
     first converts the target values into {-1, 1} and then treats the
@@ -88,16 +119,8 @@ class KernelRidgeClassifier(KernelModel):
         self.X_fit_ = X
         return self
 
-    def decision_function(self, X):
-        K = self._gram_matrix(X, self.X_fit_)
-        return np.dot(K, self.dual_coef_)
 
-    def predict(self, X):
-        scores = self.decision_function(X)
-        return np.asarray((scores > 0).astype(int))
-
-
-class KernelLogisticClassifier(KernelModel):
+class KernelLogisticClassifier(LinearKernelBinaryClassifier):
     """
     Binary Logistic classifier model using kernel methods. This classifier
     first converts the target values into {-1, 1} and then treats the
@@ -147,11 +170,3 @@ class KernelLogisticClassifier(KernelModel):
         self.dual_coef_ = coef
         self.X_fit_ = X
         return self
-
-    def decision_function(self, X):
-        K = self._gram_matrix(X, self.X_fit_)
-        return np.dot(K, self.dual_coef_)
-
-    def predict(self, X):
-        scores = self.decision_function(X)
-        return np.asarray((scores > 0).astype(int))
