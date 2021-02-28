@@ -14,9 +14,8 @@ from scipy.special import expit
 
 from utils import *
 
-
-def linear_kernel(x, y):
-    return np.dot(x, y)
+# Constant for linear kernel K(x, y) = <x, y>
+LINEAR_KERNEL = 'lin'
 
 
 class KernelModel:
@@ -24,13 +23,14 @@ class KernelModel:
     Base class for models using a Kernel function.
     """
 
-    def __init__(self, kernel=linear_kernel):
+    def __init__(self, kernel=LINEAR_KERNEL):
         """
-        :param kernel: callable function that takes two n,d np.arrays and
+        :param kernel: LINEAR_KERNEL,
+        or callable function that takes two n,d np.arrays and
         returns a number. This function should be a positive definite Kernel
         (https://en.wikipedia.org/wiki/Positive-definite_kernel).
         """
-        assert callable(kernel)
+        assert kernel in [LINEAR_KERNEL] or callable(kernel)
         self.kernel_ = kernel
 
     def _gram_matrix(self, X, Y):
@@ -41,6 +41,9 @@ class KernelModel:
         :param Y: np.array with shape nY, d
         :return: np.array with shape nX, nY
         """
+        if self.kernel_ == LINEAR_KERNEL:
+            return linear_kernel_gram_matrix(X, Y)
+
         nX, dX = X.shape
         nY, dY = Y.shape
         assert dX == dY
@@ -59,7 +62,7 @@ class LinearKernelBinaryClassifier(KernelModel):
     vector dual_coef_.
     """
 
-    def __init__(self, kernel=linear_kernel):
+    def __init__(self, kernel=LINEAR_KERNEL):
         """
         :param kernel: see KernelModel doc
         """
@@ -89,7 +92,7 @@ class KernelRidgeClassifier(LinearKernelBinaryClassifier):
     problem as a regression task.
     """
 
-    def __init__(self, alpha=1, kernel=linear_kernel):
+    def __init__(self, alpha=1, kernel=LINEAR_KERNEL):
         """
         :param alpha: L2 regularization weight, must be a positive float
         :param kernel: see KernelModel doc
@@ -128,7 +131,7 @@ class KernelLogisticClassifier(LinearKernelBinaryClassifier):
     problem as a regression task.
     """
 
-    def __init__(self, alpha=1, kernel=linear_kernel):
+    def __init__(self, alpha=1, kernel=LINEAR_KERNEL):
         self.alpha_ = alpha
         self.dual_coef_ = None
         self.X_fit_ = None
@@ -178,7 +181,7 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
     Binary SVM classifier model using kernel methods.
     """
 
-    def __init__(self, alpha=1, kernel=linear_kernel):
+    def __init__(self, alpha=1, kernel=LINEAR_KERNEL):
         self.alpha_ = alpha
         self.dual_coef_ = None
         self.X_fit_ = None
