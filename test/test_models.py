@@ -4,7 +4,7 @@ import numpy as np
 from numpy import testing
 
 from models import KernelLogisticClassifier, KernelModel, KernelRidgeClassifier, \
-    LinearKernelBinaryClassifier
+    KernelSVMClassifier, LinearKernelBinaryClassifier
 
 
 class TestKernelModel(TestCase):
@@ -116,3 +116,33 @@ class TestKernelLogisticClassifier(TestCase):
         # obtained using cvxpy in script.py
         expected_dual_coef = np.array([-0.14089595, 0.05334446])
         testing.assert_almost_equal(self.model.dual_coef_, expected_dual_coef)
+
+
+class TestKernelSVMClassifier(TestCase):
+    def test_fit(self):
+        X = np.vstack([1])
+        y = np.array([1])
+
+        # The model maximizes f(c)=2*c-c^2 s.t. 0<=c<=1/(2*alpha).
+        # f is increasing from -inf to 1 and decreasing from 1 to +inf
+        # so the optimal c is min(1, 1/(2*alpha)).
+        model = KernelSVMClassifier(alpha=1)
+        self.assertIsNone(model.X_fit_)
+        self.assertIsNone(model.dual_coef_)
+
+        self.assertIsNotNone(model.fit(X, y))
+        testing.assert_equal(model.X_fit_, X)
+
+        expected_dual_coef = 0.5
+        testing.assert_almost_equal(model.dual_coef_,
+                                    expected_dual_coef)
+
+        model = KernelSVMClassifier(alpha=0.5).fit(X, y)
+        expected_dual_coef = 1
+        testing.assert_almost_equal(model.dual_coef_,
+                                    expected_dual_coef)
+
+        model = KernelSVMClassifier(alpha=0.25).fit(X, y)
+        expected_dual_coef = 1
+        testing.assert_almost_equal(model.dual_coef_,
+                                    expected_dual_coef)

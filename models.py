@@ -7,6 +7,7 @@ The implementation of the models is inspired by the scikit-learn library
 """
 
 import numpy as np
+import cvxpy as cp
 
 from scipy import linalg
 from scipy.special import expit
@@ -169,4 +170,48 @@ class KernelLogisticClassifier(LinearKernelBinaryClassifier):
 
         self.dual_coef_ = coef
         self.X_fit_ = X
+        return self
+
+
+class KernelSVMClassifier(LinearKernelBinaryClassifier):
+    """
+    Binary SVM classifier model using kernel methods.
+    """
+
+    def __init__(self, alpha=1, kernel=linear_kernel):
+        self.alpha_ = alpha
+        self.dual_coef_ = None
+        self.X_fit_ = None
+        super().__init__(kernel=kernel)
+
+    def fit(self, X, y, eps_abs=1e-5, eps_rel=1e-5, max_iter=10000):
+        """
+        Compute self.dual_coef c to minimize: 2 * y.T @ c - c.T @ K @ c
+        s.t. 0 <= c_i * y_i <= 1 / (2 * alpha_ * n) for all i
+        The solver used is OSQP through the cvxpy library.
+        :param X: np.array with shape n, d
+        :param y: np.array with shape (n,)
+        :param eps_abs: absolute accuracy (OSQP solver parameter)
+        :param eps_rel: relative accuracy (OSQP solver parameter)
+        :param max_iter: maximum number of iterations (OSQP solver parameter)
+        :return: self
+        """
+        y = binary_regression_labels(y)
+        K = self._gram_matrix(X, X)
+        n, _ = X.shape
+
+        coef = cp.Variable(n)
+        problem = cp.Problem(
+            cp.Maximize(2 * y.T @ coef - cp.quad_form(coef, K)),
+            [0 <= cp.multiply(y, coef),
+             cp.multiply(y, coef) <= 1 / (2 * self.alpha_ * n)])
+        problem.solve(solver='OSQP', max_iter=max_iter, eps_abs=eps_abs,
+                      eps_rel=eps_rel)
+        if coef.value is None:
+            raise Exception(
+                f"Solver fot {self.__class__.__name__} fit method failed with"
+                f" status {problem.status}")
+
+        self.X_fit_ = X
+        self.dual_coef_ = coef.value
         return self
