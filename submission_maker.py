@@ -71,10 +71,10 @@ for k in range(3):
     print("==============")
     print("PREDICTION FILE " + str(k))
     ### Choice of Kernel
-    kernel_selected = KernelLogisticClassifier()
+    kernel_selected = KernelSVMClassifier()
     
     ### Dataset loader with feature choice
-    X_train, y_train, X_test = read_dataset_train_test(k, use_mat_features=True)#, use_kmers=True, kmer_max_size=4)
+    X_train, y_train, X_test = read_dataset_train_test(k, use_mat_features=True)# use_kmers=True, kmer_max_size=4)
     
     ### Kernel fitting
     kernel_selected.fit(X_train, y_train)
@@ -84,7 +84,7 @@ for k in range(3):
 
 #%% Create submission in right format
 
-submission_name = "submission_basic_logistic_centered.csv"
+submission_name = "submission_withoutkmer_SVM.csv"
 
 id_test = [i for i in range(3000)]
 prediction_test = list(test_prediction[0]) + list(test_prediction[1]) + list(test_prediction[2])
