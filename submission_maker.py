@@ -55,11 +55,14 @@ def read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_max_s
   y_train = df_train['Bound'].to_numpy()
   
   ### Center data and to numpy
-  scaled_train = (df_train[list_features] - df_train[list_features].mean())/df_train[list_features].std()
-  X_train = scaled_train.to_numpy()
+  scaled_total = pd.concat([df_train[list_features], df_test[list_features]], ignore_index=True)  
+  scaled_total = (scaled_total[list_features] - scaled_total[list_features].mean())/scaled_total[list_features].std()
+  X_train = scaled_total.iloc[:2000].to_numpy()
+  X_test = scaled_total.iloc[2000:].to_numpy()
   
-  scaled_test = (df_test[list_features] - df_test[list_features].mean())/df_test[list_features].std()
-  X_test = scaled_test.to_numpy()
+  #scaled_test = (df_test[list_features] - df_test[list_features].mean())/df_test[list_features].std()
+  #X_test = scaled_total.to_numpy()
+  #X_train = scaled_total.to_numpy()
   
   return X_train, y_train, X_test
 
@@ -70,11 +73,12 @@ test_prediction = {}
 for k in range(3):
     print("==============")
     print("PREDICTION FILE " + str(k))
-    ### Choice of Kernel
-    kernel_selected = KernelSVMClassifier()
     
     ### Dataset loader with feature choice
-    X_train, y_train, X_test = read_dataset_train_test(k, use_mat_features=True)# use_kmers=True, kmer_max_size=4)
+    X_train, y_train, X_test = read_dataset_train_test(k, use_mat_features=True)#, use_kmers=True, kmer_max_size=4)
+    
+    ### Choice of Kernel
+    kernel_selected = KernelSVMClassifier(kernel='lin')
     
     ### Kernel fitting
     kernel_selected.fit(X_train, y_train)
@@ -84,7 +88,7 @@ for k in range(3):
 
 #%% Create submission in right format
 
-submission_name = "submission_withoutkmer_SVM.csv"
+submission_name = "submission_100mat_SVM_lin_1.csv"
 
 id_test = [i for i in range(3000)]
 prediction_test = list(test_prediction[0]) + list(test_prediction[1]) + list(test_prediction[2])
