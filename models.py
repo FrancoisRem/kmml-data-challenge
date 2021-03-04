@@ -76,7 +76,7 @@ class LinearKernelBinaryClassifier(KernelModel):
         """
         self.X_fit_ = None
         self.dual_coef_ = None
-        super().__init__(kernel=kernel)
+        super().__init__(kernel=kernel, gamma=gamma)
 
     def decision_function(self, X):
         self.assert_is_fitted()
@@ -108,7 +108,7 @@ class KernelRidgeClassifier(LinearKernelBinaryClassifier):
         self.alpha_ = alpha
         self.dual_coef_ = None
         self.X_fit_ = None
-        super().__init__(kernel=kernel)
+        super().__init__(kernel=kernel, gamma=gamma)
 
     def fit(self, X, y, sample_weight=None):
         y = binary_regression_labels(y)
@@ -139,11 +139,11 @@ class KernelLogisticClassifier(LinearKernelBinaryClassifier):
     problem as a regression task.
     """
 
-    def __init__(self, alpha=1, kernel=LINEAR_KERNEL,gamma=1):
+    def __init__(self, alpha=1, kernel=LINEAR_KERNEL, gamma=1):
         self.alpha_ = alpha
         self.dual_coef_ = None
         self.X_fit_ = None
-        super().__init__(kernel=kernel)
+        super().__init__(kernel=kernel, gamma=gamma)
 
     def fit(self, X, y, tol=1e-4, max_iter=100):
         """
@@ -193,7 +193,7 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
         self.alpha_ = alpha
         self.dual_coef_ = None
         self.X_fit_ = None
-        super().__init__(kernel=kernel)
+        super().__init__(kernel=kernel, gamma=gamma)
 
     def fit(self, X, y, eps_abs=1e-5, eps_rel=1e-5, max_iter=10000):
         """
