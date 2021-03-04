@@ -16,6 +16,9 @@ from utils import *
 
 # Constant for linear kernel K(x, y) = <x, y>
 LINEAR_KERNEL = 'lin'
+# Constant for Gaussian (Radial Basis Function) kernel
+# K(x, y) = exp(-gamma * ||x - y||^2)
+GAUSSIAN_KERNEL = 'rbf'
 
 
 class KernelModel:
@@ -23,15 +26,17 @@ class KernelModel:
     Base class for models using a Kernel function.
     """
 
-    def __init__(self, kernel=LINEAR_KERNEL):
+    def __init__(self, kernel=LINEAR_KERNEL, gamma=1):
         """
         :param kernel: LINEAR_KERNEL,
         or callable function that takes two n,d np.arrays and
         returns a number. This function should be a positive definite Kernel
         (https://en.wikipedia.org/wiki/Positive-definite_kernel).
+        :param gamma: float, coefficient for Gaussian kernel
         """
-        assert kernel in [LINEAR_KERNEL] or callable(kernel)
+        assert kernel in [LINEAR_KERNEL, GAUSSIAN_KERNEL] or callable(kernel)
         self.kernel_ = kernel
+        self.gamma_ = gamma
 
     def _gram_matrix(self, X, Y):
         """
@@ -43,6 +48,9 @@ class KernelModel:
         """
         if self.kernel_ == LINEAR_KERNEL:
             return linear_kernel_gram_matrix(X, Y)
+
+        if self.kernel_ == GAUSSIAN_KERNEL:
+            return gaussian_kernel_gram_matrix(X, Y, self.gamma_)
 
         nX, dX = X.shape
         nY, dY = Y.shape
