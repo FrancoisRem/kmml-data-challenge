@@ -3,7 +3,8 @@ from unittest import TestCase
 import numpy as np
 from numpy import testing
 
-from utils import binary_regression_labels, gaussian_kernel_gram_matrix, \
+from utils import accuracy_score, binary_regression_labels, \
+    gaussian_kernel_gram_matrix, \
     linear_kernel_gram_matrix
 
 
@@ -63,3 +64,17 @@ class Test(TestCase):
         expected = np.array([[0.13533528323, 0.13533528323]])
         testing.assert_almost_equal(gaussian_kernel_gram_matrix(X, Y, gamma=1),
                                     expected)
+
+    def test_accuracy_score(self):
+        self.assertAlmostEqual(
+            accuracy_score(np.array([1, 0, 1]), np.array([1, 0, 0])),
+            2 / 3)
+        self.assertAlmostEqual(
+            accuracy_score(np.array([1, 0, 0]), np.array([1, 0, 0])),
+            1)
+        self.assertAlmostEqual(
+            accuracy_score(np.array([1, 0]), np.array([0, 1])),
+            0)
+        self.assertAlmostEqual(
+            accuracy_score(np.array([3, 5, 5]), np.array([5, 5, 3])),
+            1 / 3)

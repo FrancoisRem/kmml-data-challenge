@@ -32,3 +32,16 @@ def gaussian_kernel_gram_matrix(X, Y, gamma):
     """
     distances = cdist(X, Y, metric='sqeuclidean')
     return np.exp(-gamma * distances)
+
+
+def accuracy_score(predicted, expected):
+    """
+    Compute the accuracy score between predicted and expected labels.
+    :param predicted: np.array with shape (n,) of two int labels
+    :param expected: np.array with shape (n,) of two int labels
+    :return: accuracy score in [0, 1]
+    """
+    n = len(predicted)
+    assert n > 0
+    assert predicted.shape == expected.shape == (n,)
+    return (predicted == expected).sum() / n
