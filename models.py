@@ -70,7 +70,7 @@ class LinearKernelBinaryClassifier(KernelModel):
     vector dual_coef_.
     """
 
-    def __init__(self, kernel=LINEAR_KERNEL, gamma=1):
+    def __init__(self, kernel=LINEAR_KERNEL, gamma='auto'):
         """
         :param kernel: see KernelModel doc
         """
@@ -100,7 +100,7 @@ class KernelRidgeClassifier(LinearKernelBinaryClassifier):
     problem as a regression task.
     """
 
-    def __init__(self, alpha=1, kernel=LINEAR_KERNEL, gamma=1):
+    def __init__(self, alpha=1, kernel=LINEAR_KERNEL, gamma='auto'):
         """
         :param alpha: L2 regularization weight, must be a positive float
         :param kernel: see KernelModel doc
@@ -139,7 +139,7 @@ class KernelLogisticClassifier(LinearKernelBinaryClassifier):
     problem as a regression task.
     """
 
-    def __init__(self, alpha=1, kernel=LINEAR_KERNEL, gamma=1):
+    def __init__(self, alpha=1, kernel=LINEAR_KERNEL, gamma='auto'):
         self.alpha_ = alpha
         self.dual_coef_ = None
         self.X_fit_ = None
@@ -189,7 +189,7 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
     Binary SVM classifier model using kernel methods.
     """
 
-    def __init__(self, alpha=1, kernel=LINEAR_KERNEL, gamma=1):
+    def __init__(self, alpha=1, kernel=LINEAR_KERNEL, gamma='auto'):
         self.alpha_ = alpha
         self.dual_coef_ = None
         self.X_fit_ = None
