@@ -32,7 +32,7 @@ def gaussian_kernel_gram_matrix(X, Y, gamma):
     """
     distances = cdist(X, Y, metric='sqeuclidean')
     if gamma == 'auto':
-        gamma = 1 / len(X)
+        gamma = 1 / X.shape[1]
     return np.exp(-gamma * distances)
 
 
