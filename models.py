@@ -2,11 +2,10 @@
 The algorithms to optimize the models are inspired by the Kernel methods for
 machine learning class by Jean-Philippe Vert and Julien Mairal
 (http://members.cbio.mines-paristech.fr/~jvert/svn/kernelcourse/course/2021mva/index.html).
-The implementation of the models is inspired by the scikit-learn library
-(https://scikit-learn.org/stable/).
+The interface of the models follows the main standards of the scikit-learn
+library (https://scikit-learn.org/stable/).
 """
 
-import numpy as np
 import cvxpy as cp
 
 from scipy import linalg
@@ -197,7 +196,7 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
 
     def fit(self, X, y, eps_abs=1e-5, eps_rel=1e-5, max_iter=10000):
         """
-        Compute self.dual_coef c to minimize: 2 * y.T @ c - c.T @ K @ c
+        Compute self.dual_coef c to maximize: 2 * y.T @ c - c.T @ K @ c
         s.t. 0 <= c_i * y_i <= 1 / (2 * alpha_ * n) for all i
         The solver used is OSQP through the cvxpy library.
         :param X: np.array with shape n, d
