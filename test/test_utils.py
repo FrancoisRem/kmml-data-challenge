@@ -41,6 +41,10 @@ class Test(TestCase):
         testing.assert_almost_equal(gaussian_kernel_gram_matrix(X, Y, gamma=1),
                                     0.3678794411)
 
+        testing.assert_almost_equal(
+            gaussian_kernel_gram_matrix(X, Y, gamma='auto'),
+            0.3678794411)
+
         X = np.vstack([7])
         Y = np.vstack([0])
         # expected: exp(-0.05*||7-0||^2)=exp(-2.45)~0.08629358649
@@ -57,6 +61,13 @@ class Test(TestCase):
             [[0.13533528323, 0.13533528323], [3.2213403e-27, 1.5628822e-18]])
         testing.assert_almost_equal(gaussian_kernel_gram_matrix(X, Y, gamma=1),
                                     expected)
+
+        # expected = np.array([[exp(-1), exp(-1)], [exp(-30.5), exp(-20.5)]])
+        expected = np.array([[3.67879441e-01, 3.67879441e-01],
+                             [5.67568523e-14, 1.25015287e-09]])
+        testing.assert_almost_equal(
+            gaussian_kernel_gram_matrix(X, Y, gamma='auto'),
+            expected)
 
         X = np.array([[1, 0]])
         Y = np.array([[0, 1], [2, 1]])

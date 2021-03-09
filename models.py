@@ -25,13 +25,14 @@ class KernelModel:
     Base class for models using a Kernel function.
     """
 
-    def __init__(self, kernel=LINEAR_KERNEL, gamma=1):
+    def __init__(self, kernel=LINEAR_KERNEL, gamma='auto'):
         """
         :param kernel: LINEAR_KERNEL,
         or callable function that takes two n,d np.arrays and
         returns a number. This function should be a positive definite Kernel
         (https://en.wikipedia.org/wiki/Positive-definite_kernel).
-        :param gamma: float, coefficient for Gaussian kernel
+        :param gamma: float, coefficient for Gaussian kernel. Or 'auto' which
+        gives gamma=1/(nb_features).
         """
         assert kernel in [LINEAR_KERNEL, GAUSSIAN_KERNEL] or callable(kernel)
         self.kernel_ = kernel
