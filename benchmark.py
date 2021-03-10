@@ -82,7 +82,6 @@ for k in range(3):
 
     X_train, X_test = normalize_train_test(X_train, X_test)
 
-    map(lambda df: df.to_numpy(), [X_train, X_test, y_train, y_test])
     for model in models:
         print(
             f"Train and evaluate model: {model.__class__.__name__} "
