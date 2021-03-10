@@ -20,7 +20,7 @@ TRAINING_FILE_PREFIX="Xtr"
 LABEL_FILE_PREFIX="Ytr"
 TEST_FILE_PREFIX="Xte"
 
-def read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_max_size=4):
+def read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_min_size=3, kmer_max_size=4, with_misplacement=True, number_misplacements=1):
   df_test = pd.read_csv(DATA_FILE_PREFIX+TEST_FILE_PREFIX + str(k) + ".csv")
   
   Xtr_df = pd.read_csv(DATA_FILE_PREFIX+TRAINING_FILE_PREFIX + str(k) + ".csv")
@@ -44,10 +44,10 @@ def read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_max_s
   ### Features of kmers frequency
   if use_kmers :
       ### train
-      list_kmer_pattern, df_train = add_kmer_features(kmer_max_size, df_train)
+      list_kmer_pattern, df_train = add_kmer_features(kmer_min_size, kmer_max_size, with_misplacement, number_misplacements, df_train)
       
       ### test
-      _, df_test = add_kmer_features(kmer_max_size, df_test)
+      _, df_test = add_kmer_features(kmer_min_size, kmer_max_size, with_misplacement, number_misplacements,  df_test)
       
       list_features += list_kmer_pattern
 
@@ -66,6 +66,8 @@ def read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_max_s
   
   return X_train, y_train, X_test
 
+#X_tr, y_tr, X_te = read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_min_size=3, kmer_max_size=6, with_misplacement=True, number_misplacements=1)
+
 #%% Actual Fitting and prediction
 
 ### 3 different datasets
@@ -75,10 +77,10 @@ for k in range(3):
     print("PREDICTION FILE " + str(k))
     
     ### Dataset loader with feature choice
-    X_train, y_train, X_test = read_dataset_train_test(k, use_mat_features=True)#, use_kmers=True, kmer_max_size=4)
+    X_train, y_train, X_test = read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_min_size=4, kmer_max_size=6, with_misplacement=True, number_misplacements=1)
     
     ### Choice of Kernel
-    kernel_selected = KernelSVMClassifier(kernel='lin')
+    kernel_selected = KernelSVMClassifier(kernel='lin', gamma='auto')
     
     ### Kernel fitting
     kernel_selected.fit(X_train, y_train)
@@ -88,7 +90,7 @@ for k in range(3):
 
 #%% Create submission in right format
 
-submission_name = "submission_100mat_SVM_lin_1.csv"
+submission_name = "submission_testPP_v2.csv"
 
 id_test = [i for i in range(3000)]
 prediction_test = list(test_prediction[0]) + list(test_prediction[1]) + list(test_prediction[2])

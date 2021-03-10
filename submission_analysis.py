@@ -41,7 +41,7 @@ def analyse_two_submissions(path_sub1, path_sub2):
     
 #%% Run analysis
 
-path_sub1 = "submission_100mat_Logistic_lin_1.csv"
-path_sub2 = "submission_100mat_SVM_lin_1.csv"
+path_sub1 = "637_submission_100mat_kmer_SVM.csv"
+path_sub2 = "submission_100mat_SVM_gaussian_scale1.csv"
 
 confusion_df = analyse_two_submissions(path_sub1, path_sub2)
