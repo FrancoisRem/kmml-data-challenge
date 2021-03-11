@@ -75,15 +75,15 @@ for k in range(3):
     
     ### Dataset loader with feature choice
     X_train, y_train, X_test = read_dataset_train_test(k,
-                                                       use_mat_features=False,
+                                                       use_mat_features=True,
                                                        use_kmers=True,
                                                        kmer_min_size=4,
-                                                       kmer_max_size=5,
+                                                       kmer_max_size=6,
                                                        with_misplacement=True,
                                                        number_misplacements=1)
 
     ### Choice of Kernel
-    kernel_selected = KernelSVMClassifier(kernel=GAUSSIAN_KERNEL, alpha=1e-4)
+    kernel_selected = KernelSVMClassifier(kernel=LINEAR_KERNEL)
     
     ### Kernel fitting
     kernel_selected.fit(X_train, y_train)
@@ -93,7 +93,7 @@ for k in range(3):
 
 #%% Create submission in right format
 
-submission_name = "submission_std_rbf_svm.csv"
+submission_name = "submission_std_lin_svm.csv"
 
 id_test = [i for i in range(3000)]
 prediction_test = list(test_prediction[0]) + list(test_prediction[1]) + list(test_prediction[2])
