@@ -6,12 +6,10 @@ Created on Sun Feb 28 13:58:29 2021
 
 #%% Imports
 
-from models import *
-from feature_extractor import *
-
 import pandas as pd
-import numpy as np
 
+from feature_extractor import *
+from models import *
 
 #%% Load data
 
@@ -55,15 +53,14 @@ def read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_min_s
   y_train = df_train['Bound'].to_numpy()
   
   ### Center data and to numpy
-  scaled_total = pd.concat([df_train[list_features], df_test[list_features]], ignore_index=True)  
-  scaled_total = (scaled_total[list_features] - scaled_total[list_features].mean())/scaled_total[list_features].std()
-  X_train = scaled_total.iloc[:2000].to_numpy()
-  X_test = scaled_total.iloc[2000:].to_numpy()
+  X_train = df_train[list_features].to_numpy()
+  X_test = df_test[list_features].to_numpy()
+  X_train, X_test = standardize_train_test(X_train, X_test)
   
   #scaled_test = (df_test[list_features] - df_test[list_features].mean())/df_test[list_features].std()
   #X_test = scaled_total.to_numpy()
   #X_train = scaled_total.to_numpy()
-  
+
   return X_train, y_train, X_test
 
 #X_tr, y_tr, X_te = read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_min_size=3, kmer_max_size=6, with_misplacement=True, number_misplacements=1)
@@ -77,10 +74,16 @@ for k in range(3):
     print("PREDICTION FILE " + str(k))
     
     ### Dataset loader with feature choice
-    X_train, y_train, X_test = read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_min_size=4, kmer_max_size=6, with_misplacement=True, number_misplacements=1)
-    
+    X_train, y_train, X_test = read_dataset_train_test(k,
+                                                       use_mat_features=False,
+                                                       use_kmers=True,
+                                                       kmer_min_size=4,
+                                                       kmer_max_size=5,
+                                                       with_misplacement=True,
+                                                       number_misplacements=1)
+
     ### Choice of Kernel
-    kernel_selected = KernelSVMClassifier(kernel='lin', gamma='auto')
+    kernel_selected = KernelSVMClassifier(kernel=GAUSSIAN_KERNEL, alpha=1e-4)
     
     ### Kernel fitting
     kernel_selected.fit(X_train, y_train)
@@ -90,7 +93,7 @@ for k in range(3):
 
 #%% Create submission in right format
 
-submission_name = "submission_testPP_v2.csv"
+submission_name = "submission_std_rbf_svm.csv"
 
 id_test = [i for i in range(3000)]
 prediction_test = list(test_prediction[0]) + list(test_prediction[1]) + list(test_prediction[2])
