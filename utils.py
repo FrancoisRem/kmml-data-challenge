@@ -1,5 +1,5 @@
-from scipy.spatial.distance import cdist
 import numpy as np
+from scipy.spatial.distance import cdist
 
 
 def binary_regression_labels(y):
@@ -47,3 +47,16 @@ def accuracy_score(predicted, expected):
     assert n > 0
     assert predicted.shape == expected.shape == (n,)
     return (predicted == expected).sum() / n
+
+
+def standardize_train_test(X_train, X_test):
+    """
+    Center and scale X_train and X_test by X_train mean and std along axis.
+    :param X_train: (nX, d)-np.array
+    :param X_test:  (nY, d)-np.array
+    :return: (nX, d)-np.array, (nY, d)-np.array
+    """
+    X_train_mean, X_train_std = X_train.mean(axis=0), X_train.std(axis=0)
+    X_train = (X_train - X_train_mean) / X_train_std
+    X_test = (X_test - X_train_mean) / X_train_std
+    return X_train, X_test

@@ -56,14 +56,6 @@ def split_train_test(df, list_features, test_size=0.20):
     return X_train, X_test, y_train, y_test
 
 
-def normalize_train_test(X_train, X_test):
-    # Center and scale by X_train statistics
-    X_train_mean, X_train_std = X_train.mean(), X_train.std()
-    X_train = (X_train - X_train_mean) / X_train_std
-    X_test = (X_test - X_train_mean) / X_train_std
-    return X_train, X_test
-
-
 # Models to train and evaluate
 MODELS = [
     KernelLogisticClassifier(kernel=LINEAR_KERNEL, alpha=1e-3),
@@ -80,7 +72,7 @@ for k in range(3):
 
     X_train, X_test, y_train, y_test = split_train_test(df, list_features)
 
-    X_train, X_test = normalize_train_test(X_train, X_test)
+    X_train, X_test = standardize_train_test(X_train, X_test)
 
     for model in models:
         print(
