@@ -20,9 +20,10 @@ def read_train_dataset(k):
 
 
 def compute_features(df,
-                     use_mat_features=True,
-                     use_kmers=True,
-                     kmer_max_size=4):
+                     use_mat_features=False,
+                     use_kmers=False,
+                     kmer_min_size=4, kmer_max_size=5, with_misplacement=True,
+                     number_misplacements=1):
     list_features = []
     # Features created by professors
     if use_mat_features:
@@ -34,7 +35,9 @@ def compute_features(df,
 
     # Features of kmers frequency
     if use_kmers:
-        list_kmer_pattern, df = add_kmer_features(kmer_max_size, df)
+        list_kmer_pattern, df = add_kmer_features(kmer_min_size, kmer_max_size,
+                                                  with_misplacement,
+                                                  number_misplacements, df)
         list_features += list_kmer_pattern
 
     return df, list_features
@@ -68,7 +71,8 @@ for k in range(3):
 
     df = read_train_dataset(k)
 
-    df, list_features = compute_features(df, use_mat_features=True)
+    df, list_features = compute_features(df, use_mat_features=False,
+                                         use_kmers=True)
 
     X_train, X_test, y_train, y_test = split_train_test(df, list_features)
 
