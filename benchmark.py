@@ -23,7 +23,7 @@ def compute_features(df,
                      use_mat_features=False,
                      use_kmers=False,
                      kmer_min_size=4, kmer_max_size=5, with_misplacement=True,
-                     number_misplacements=1):
+                     number_misplacements=1, dict_original_pattern_to_misplaced=None):
     list_features = []
     # Features created by professors
     if use_mat_features:
@@ -35,12 +35,12 @@ def compute_features(df,
 
     # Features of kmers frequency
     if use_kmers:
-        list_kmer_pattern, df = add_kmer_features(kmer_min_size, kmer_max_size,
+        list_kmer_pattern, df, dict_original_pattern_to_misplaced = add_kmer_features(kmer_min_size, kmer_max_size,
                                                   with_misplacement,
-                                                  number_misplacements, df)
+                                                  number_misplacements, df, dict_original_pattern_to_misplaced)
         list_features += list_kmer_pattern
 
-    return df, list_features
+    return df, list_features, dict_original_pattern_to_misplaced
 
 
 def split_train_test(df, list_features, test_size=0.20):
@@ -64,6 +64,9 @@ MODELS = [
     KernelLogisticClassifier(kernel=LINEAR_KERNEL, alpha=1e-3),
     KernelSVMClassifier(kernel=GAUSSIAN_KERNEL, alpha=1e-4),
 ]
+
+dict_original_pattern_to_misplaced = None
+
 for k in range(3):
     # Reinitialize models at each iteration
     models = deepcopy(MODELS)
@@ -71,8 +74,8 @@ for k in range(3):
 
     df = read_train_dataset(k)
 
-    df, list_features = compute_features(df, use_mat_features=False,
-                                         use_kmers=True)
+    df, list_features, dict_original_pattern_to_misplaced = compute_features(df, use_mat_features=False,
+                                         use_kmers=True, dict_original_pattern_to_misplaced=dict_original_pattern_to_misplaced)
 
     X_train, X_test, y_train, y_test = split_train_test(df, list_features)
 

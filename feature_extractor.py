@@ -10,6 +10,7 @@ Created on Sun Feb 28 14:10:39 2021
 import pandas as pd
 import numpy as np
 import itertools
+import time
 
 #%% K-mers
 
@@ -89,24 +90,35 @@ def create_kmer_freq_with_misplacements(kmer_patterns, dict_original_pattern_to_
     for k in kmer_patterns:
       list_total_patterns+=kmer_patterns[k]
     
+    ### Calculation without misplacement as classic method
+    dict_count_appearances = {}
+    for kmer_size in kmer_patterns:
+      for pattern in kmer_patterns[kmer_size]:
+          dict_count_appearances[pattern]=0
+    
+    
+    for kmer_size in kmer_patterns:
+        for idx in range(len(input_string)-kmer_size):
+            dict_count_appearances[input_string[idx:idx+kmer_size]]+=1
+    
+    ### Taking misplacement into account
     dict_count_appearances_with_misplacements = {}
     for kmer_size in kmer_patterns:
       for pattern in kmer_patterns[kmer_size]:
           dict_count_appearances_with_misplacements[pattern]=0
-    
+          
     for kmer_size in kmer_patterns:
-        for idx in range(len(input_string)-kmer_size):
-            patterns_to_increment = dict_original_pattern_to_misplaced[input_string[idx:idx+kmer_size]]
-            for misplaced_pattern in patterns_to_increment:
-                dict_count_appearances_with_misplacements[misplaced_pattern]+=1
-    
+      for pattern_original in kmer_patterns[kmer_size]:
+          for pattern_approximate in dict_original_pattern_to_misplaced[pattern_original]:
+              dict_count_appearances_with_misplacements[pattern_approximate] += dict_count_appearances[pattern_original]
+
     freq_values = list(dict_count_appearances_with_misplacements.values())
     
     freq_vector = [x for _,x in sorted(zip(list_total_patterns,freq_values))]
 
     return np.array(freq_vector)
 
-def add_kmer_features(kmer_min_size, kmer_max_size, with_misplacement, number_misplacements, raw_df):
+def add_kmer_features(kmer_min_size, kmer_max_size, with_misplacement, number_misplacements, raw_df, dict_original_pattern_to_misplaced):
     '''
     Parameters
     ----------
@@ -136,15 +148,18 @@ def add_kmer_features(kmer_min_size, kmer_max_size, with_misplacement, number_mi
       list_total_patterns+=kmer_patterns[k]
       
     if with_misplacement :
-        
-        ### Dico : key : original pattern and value : list of patterns with fewer misplacements than number_displacements
-        dict_original_pattern_to_misplaced = {}
-        for pattern in list_total_patterns:
-            dict_original_pattern_to_misplaced[pattern] = []
-            for pattern_compared in list_total_patterns:
-                if count_misplacements(pattern, pattern_compared) <= number_misplacements :
-                    dict_original_pattern_to_misplaced[pattern].append(pattern_compared)
-        
+        if dict_original_pattern_to_misplaced == None :
+            
+            ### Dico : key : original pattern and value : list of patterns with fewer misplacements than number_displacements
+            dict_original_pattern_to_misplaced = {}
+            
+            for k in kmer_patterns :
+                for pattern_original in kmer_patterns[k]:
+                    dict_original_pattern_to_misplaced[pattern_original] = []
+                    for pattern_compared in kmer_patterns[k]:
+                        if count_misplacements(pattern_original, pattern_compared) <= number_misplacements :
+                            dict_original_pattern_to_misplaced[pattern_original].append(pattern_compared)
+                            
         #print(dict_original_pattern_to_misplaced["AAA"])
         ### Application to the initial data
         df_featured = raw_df.copy()
@@ -154,7 +169,7 @@ def add_kmer_features(kmer_min_size, kmer_max_size, with_misplacement, number_mi
         df_featured = raw_df.copy()
         df_featured[list_total_patterns] = df_featured.apply(lambda x: create_kmer_freq(kmer_patterns, x['seq']), axis=1, result_type='expand')
     
-    return list_total_patterns, df_featured
+    return list_total_patterns, df_featured, dict_original_pattern_to_misplaced
 
 
     
