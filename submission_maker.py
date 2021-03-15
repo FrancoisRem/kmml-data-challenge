@@ -82,8 +82,8 @@ for k in range(3):
     X_train, y_train, X_test, dict_original_pattern_to_misplaced = read_dataset_train_test(k,
                                                        use_mat_features=False,
                                                        use_kmers=True,
-                                                       kmer_min_size=10,
-                                                       kmer_max_size=10,
+                                                       kmer_min_size=7,
+                                                       kmer_max_size=7,
                                                        with_misplacement=True,
                                                        number_misplacements=3,
                                                        dict_original_pattern_to_misplaced=dict_original_pattern_to_misplaced)
@@ -104,7 +104,7 @@ for k in range(3):
 
 #%% Create submission in right format
 
-submission_name = "submission_10kmer_3mis_rbf_svm.csv"
+submission_name = "submission_7kmer_0mis_rbf_svm.csv"
 
 id_test = [i for i in range(3000)]
 prediction_test = list(test_prediction[0]) + list(test_prediction[1]) + list(test_prediction[2])
