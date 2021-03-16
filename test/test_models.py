@@ -119,14 +119,14 @@ class TestKernelLogisticClassifier(TestCase):
 
 
 class TestKernelSVMClassifier(TestCase):
-    def test_fit(self):
+    def test_fit_no_intercept_(self):
         X = np.vstack([1])
         y = np.array([1])
 
         # The model maximizes f(c)=2*c-c^2 s.t. 0<=c<=1/(2*alpha).
         # f is increasing from -inf to 1 and decreasing from 1 to +inf
         # so the optimal c is min(1, 1/(2*alpha)).
-        model = KernelSVMClassifier(alpha=1)
+        model = KernelSVMClassifier(alpha=1, intercept=False)
         self.assertIsNone(model.X_fit_)
         self.assertIsNone(model.dual_coef_)
 
@@ -137,12 +137,78 @@ class TestKernelSVMClassifier(TestCase):
         testing.assert_almost_equal(model.dual_coef_,
                                     expected_dual_coef)
 
-        model = KernelSVMClassifier(alpha=0.5).fit(X, y)
+        model = KernelSVMClassifier(alpha=0.5, intercept=False).fit(X, y)
         expected_dual_coef = 1
         testing.assert_almost_equal(model.dual_coef_,
                                     expected_dual_coef)
 
-        model = KernelSVMClassifier(alpha=0.25).fit(X, y)
+        model = KernelSVMClassifier(alpha=0.25, intercept=False).fit(X, y)
         expected_dual_coef = 1
         testing.assert_almost_equal(model.dual_coef_,
                                     expected_dual_coef)
+
+    def test_fit_intercept_1d(self):
+        X = np.vstack([1, 3])
+        y = np.array([0, 1])
+        # Small alpha value not to over-regularize for this test.
+        model = KernelSVMClassifier(intercept=True, alpha=1e-5)
+        self.assertIsNone(model.X_fit_)
+        self.assertIsNone(model.dual_coef_)
+
+        self.assertIsNotNone(model.fit(X, y))
+        testing.assert_equal(model.X_fit_, X)
+        # The intercept is equal to the opposite of the mean of the data in
+        # this case.
+        np.testing.assert_equal(model.intercept_, -2)
+        np.testing.assert_equal(model.predict(X), y)
+
+        # Check problem constraints:
+        C = 1 / (2 * X.shape[1] * model.alpha_)
+        np.testing.assert_almost_equal(np.sum(model.dual_coef_), 0)
+        np.testing.assert_equal(model.dual_coef_ * y >= 0, True)
+        np.testing.assert_equal(model.dual_coef_ * y <= C, True)
+
+        # Assert that the same model with intercept=False cannot classify
+        # correctly the data.
+        model = KernelSVMClassifier(intercept=False).fit(X, y)
+        self.assertFalse(np.all(model.predict(X) == y))
+
+    def test_fit_intercept_2d(self):
+        X = np.vstack([[0, 1], [1, 0], [2, 2], [4, 0]])
+        y = np.array([0, 0, 1, 1])
+
+        # This little classification task can be handled perfectly with a linear
+        # SVM which implements an intercept (a bias): for example the affine
+        # hyperplan drawn with the symbol '\' correctly separates the data.
+        # However the data is not linearly separable without an intercept, so
+        # the same linear-SVM without intercept cannot correctly classify the
+        # data.
+        #
+        #     ^
+        #  \  |
+        #    \|
+        #     |\......O
+        #     |  \    .
+        #     1    \  .
+        #     |      \.
+        #     @---1---.\------O---->
+        #                \
+        #
+        model = KernelSVMClassifier(intercept=True)
+        self.assertIsNone(model.X_fit_)
+        self.assertIsNone(model.dual_coef_)
+
+        self.assertIsNotNone(model.fit(X, y))
+        testing.assert_equal(model.X_fit_, X)
+        np.testing.assert_equal(model.predict(X), y)
+
+        # Check problem constraints:
+        C = 1 / (2 * X.shape[1] * model.alpha_)
+        np.testing.assert_almost_equal(np.sum(model.dual_coef_), 0)
+        np.testing.assert_equal(model.dual_coef_ * y >= 0, True)
+        np.testing.assert_equal(model.dual_coef_ * y <= C, True)
+
+        # Assert that the same model with intercept=False cannot classify
+        # correctly the data.
+        model = KernelSVMClassifier(intercept=False).fit(X, y)
+        self.assertFalse(np.all(model.predict(X) == y))

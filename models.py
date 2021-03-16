@@ -7,7 +7,6 @@ library (https://scikit-learn.org/stable/).
 """
 
 import cvxpy as cp
-
 from scipy import linalg
 from scipy.special import expit
 
@@ -76,12 +75,13 @@ class LinearKernelBinaryClassifier(KernelModel):
         """
         self.X_fit_ = None
         self.dual_coef_ = None
+        self.intercept_ = 0
         super().__init__(kernel=kernel, gamma=gamma)
 
     def decision_function(self, X):
         self.assert_is_fitted()
         K = self._gram_matrix(X, self.X_fit_)
-        return np.dot(K, self.dual_coef_)
+        return np.dot(K, self.dual_coef_) + self.intercept_
 
     def predict(self, X):
         self.assert_is_fitted()
@@ -189,13 +189,74 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
     Binary SVM classifier model using kernel methods.
     """
 
-    def __init__(self, alpha=1, kernel=LINEAR_KERNEL, gamma='auto'):
+    def __init__(self, alpha=1, kernel=LINEAR_KERNEL, gamma='auto',
+                 intercept=True):
         self.alpha_ = alpha
+        self.do_intercept_ = intercept
         self.dual_coef_ = None
         self.X_fit_ = None
         super().__init__(kernel=kernel, gamma=gamma)
 
     def fit(self, X, y, eps_abs=1e-5, eps_rel=1e-5, max_iter=10000):
+        """
+        Fit the SVM model using the OSQP solver through the cvxpy library.
+        Depending on self.do_intercept_, the optimization problem will differ to
+        account for the intercept term (the bias) or not.
+        :param X: np.array with shape n, d
+        :param y: np.array with shape (n,)
+        :param eps_abs: absolute accuracy (OSQP solver parameter)
+        :param eps_rel: relative accuracy (OSQP solver parameter)
+        :param max_iter: maximum number of iterations (OSQP solver parameter)
+        :return: self
+        """
+        if self.do_intercept_:
+            return self.fit_intercept_(X, y, eps_abs, eps_rel, max_iter)
+
+        return self.fit_no_intercept_(X, y, eps_abs, eps_rel, max_iter)
+
+    def fit_intercept_(self, X, y, eps_abs, eps_rel, max_iter):
+        """
+        Compute self.dual_coef c to maximize: 2 * y.T @ c - c.T @ K @ c
+        s.t. 0 <= c_i * y_i <= 1 / (2 * alpha_ * n) for all i,
+        and sum_i c_i == 0.
+        Then compute self.intercept_ using complementary slackness
+        (cf. https://en.wikipedia.org/wiki/Support-vector_machine#Kernel_trick)
+        The solver used is OSQP through the cvxpy library.
+        :param X: np.array with shape n, d
+        :param y: np.array with shape (n,)
+        :param eps_abs: absolute accuracy (OSQP solver parameter)
+        :param eps_rel: relative accuracy (OSQP solver parameter)
+        :param max_iter: maximum number of iterations (OSQP solver parameter)
+        :return: self
+        """
+        y = binary_regression_labels(y)
+        K = self._gram_matrix(X, X)
+        n, _ = X.shape
+
+        C = 1 / (2 * self.alpha_ * n)
+        coef = cp.Variable(n)
+        problem = cp.Problem(
+            cp.Maximize(2 * y.T @ coef - cp.quad_form(coef, K)),
+            [0 <= cp.multiply(y, coef),
+             cp.multiply(y, coef) <= C,
+             cp.sum(coef) == 0])
+        problem.solve(solver='OSQP', max_iter=max_iter, eps_abs=eps_abs,
+                      eps_rel=eps_rel)
+        if coef.value is None:
+            raise Exception(
+                f"Solver fot {self.__class__.__name__} fit method failed with"
+                f" status {problem.status}")
+
+        # Seek support vector by maximizing the distances to the bounds 0 and C.
+        coef = coef.value
+        ind = np.argmax(y * coef + C - y * coef)
+
+        self.X_fit_ = X
+        self.dual_coef_ = coef
+        self.intercept_ = y[ind] - K[ind].dot(coef)
+        return self
+
+    def fit_no_intercept_(self, X, y, eps_abs, eps_rel, max_iter):
         """
         Compute self.dual_coef c to maximize: 2 * y.T @ c - c.T @ K @ c
         s.t. 0 <= c_i * y_i <= 1 / (2 * alpha_ * n) for all i
@@ -211,18 +272,17 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
         K = self._gram_matrix(X, X)
         n, _ = X.shape
 
+        C = 1 / (2 * self.alpha_ * n)
         coef = cp.Variable(n)
         problem = cp.Problem(
             cp.Maximize(2 * y.T @ coef - cp.quad_form(coef, K)),
-            [0 <= cp.multiply(y, coef),
-             cp.multiply(y, coef) <= 1 / (2 * self.alpha_ * n)])
+            [0 <= cp.multiply(y, coef), cp.multiply(y, coef) <= C])
         problem.solve(solver='OSQP', max_iter=max_iter, eps_abs=eps_abs,
                       eps_rel=eps_rel)
         if coef.value is None:
             raise Exception(
                 f"Solver fot {self.__class__.__name__} fit method failed with"
                 f" status {problem.status}")
-
         self.X_fit_ = X
         self.dual_coef_ = coef.value
         return self
