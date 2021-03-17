@@ -14,20 +14,39 @@ import numpy as np
 #%% MAJORITY VOTING
 
 SUBMISSION_FOLDER = "submissions/"
-path_sub1 = "657_submission_6kmer_2mis_rbf_svm.csv"
-path_sub2 = "submission_7kmer_3mis_rbf_svm.csv"
-path_sub3 = "651_submission_5kmer_1mis_rbf_svm.csv"
-sub1_df = pd.read_csv(SUBMISSION_FOLDER+path_sub1)
-sub2_df = pd.read_csv(SUBMISSION_FOLDER+path_sub2)
-sub3_df = pd.read_csv(SUBMISSION_FOLDER+path_sub3)
 
-confusion_df = sub1_df.copy()
-confusion_df['Sum'] = sub1_df['Bound'] + sub2_df['Bound'] + sub3_df['Bound']
+def submissions_go_to_the_ballots(list_submissions_name, majority_submission_name):
+    
+    ### Load all DataFrames of submission
+    list_submission_df = []
+    for submission_name in list_submissions_name:
+        list_submission_df.append(pd.read_csv(SUBMISSION_FOLDER+submission_name))
+    
+    ### Voting process
+    vote_df = list_submission_df[0].copy()
+    vote_df['Sum'] = 0 
+    
+    for submission_df in list_submission_df :
+        vote_df['Sum'] += submission_df['Bound']
+    
+    ### Prepare submission
+    final_df = list_submission_df[0].copy()
+    final_df['Bound'] = (vote_df['Sum'] > (len(list_submissions_name) / 2.0)).astype(int)
+    
+    final_df.to_csv(SUBMISSION_FOLDER+majority_submission_name, index=False)
+    
+    
+#%% Run the majority voting
 
-majo_sub = sub1_df.copy()
-majo_sub['Bound'] = (confusion_df['Sum'] > 1).astype(int)
+list_submissions_name = ["657_submission_6kmer_2mis_rbf_svm.csv",
+                         "658_submission_7kmer_2mis_rbf_svm.csv",
+                         "651_submission_5kmer_1mis_rbf_svm.csv",
+                         "647_submission_100mat_kmer_4_6_misplacement1_SVM.csv"
+                         ]
 
-majo_sub.to_csv("submissions/"+ "majority_voting.csv", index=False)
+majority_submission_name = "piche.csv"
+
+submissions_go_to_the_ballots(list_submissions_name, majority_submission_name)    
 
 
 

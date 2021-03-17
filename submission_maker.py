@@ -7,6 +7,7 @@ Created on Sun Feb 28 13:58:29 2021
 #%% Imports
 
 import pandas as pd
+import numpy as np
 import time
 
 from feature_extractor import *
@@ -16,6 +17,7 @@ from models import *
 #%% Load data
 
 DATA_FILE_PREFIX= "data/"
+FEATURE_FILE_PREFIX= "features/"
 TRAINING_FILE_PREFIX="Xtr"
 LABEL_FILE_PREFIX="Ytr"
 TEST_FILE_PREFIX="Xte"
@@ -73,6 +75,11 @@ def read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_min_s
 test_prediction = {}
 dict_original_pattern_to_misplaced = None
 
+kmer_min_size = 7
+kmer_max_size = 7
+number_misplacements = 2
+with_misplacement = True
+
 for k in range(3):
     print("==============")
     print("PREDICTION FILE " + str(k))
@@ -82,29 +89,46 @@ for k in range(3):
     X_train, y_train, X_test, dict_original_pattern_to_misplaced = read_dataset_train_test(k,
                                                        use_mat_features=False,
                                                        use_kmers=True,
-                                                       kmer_min_size=7,
-                                                       kmer_max_size=7,
-                                                       with_misplacement=True,
-                                                       number_misplacements=3,
+                                                       kmer_min_size=kmer_min_size,
+                                                       kmer_max_size=kmer_max_size,
+                                                       with_misplacement=with_misplacement,
+                                                       number_misplacements=number_misplacements,
                                                        dict_original_pattern_to_misplaced=dict_original_pattern_to_misplaced)
 
+    ### Save features extracted
+    name_features = "features_"+str(k)+"_kmin_"+str(kmer_min_size)+"_kmax_"+str(kmer_max_size)
+    if with_misplacement :
+        name_features += "_mis_"+str(number_misplacements)
+    train_name_features = name_features + "_Xtrain.npy"
+    np.save(FEATURE_FILE_PREFIX+train_name_features, X_train)
+    
+    test_name_features = name_features + "_Xtest.npy"
+    np.save(FEATURE_FILE_PREFIX+test_name_features, X_test)
+
+    checkpoint_1 = time.time()
+    print("TIME FOR EXTRACTION " + str(k) + " : " + str(int(checkpoint_1 - start_file)) + " seconds")
+
     ### Choice of Kernel
-    kernel_selected = KernelSVMClassifier(kernel=GAUSSIAN_KERNEL, alpha=1e-5)
+    kernel_selected = KernelLogisticClassifier(kernel=GAUSSIAN_KERNEL, alpha=1e-5)
     
     ### Kernel fitting
     print("FITTING")
     kernel_selected.fit(X_train, y_train)
+    checkpoint_2 = time.time()
+    print("TIME FOR FITTING " + str(k) + " : " + str(int(checkpoint_2 - checkpoint_1)) + " seconds")
     
     ### Prediction on test set
     print("PREDICTING")
     test_prediction[k] = kernel_selected.predict(X_test)
+    checkpoint_3 = time.time()
+    print("TIME FOR PREDICTING " + str(k) + " : " + str(int(checkpoint_3 - checkpoint_2)) + " seconds")
     
     runtime_file = time.time() - start_file
-    print("TIME FOR FILE " + str(k) + " : " + str(int(runtime_file)) + " seconds")
+    print("TOTAL TIME FOR FILE " + str(k) + " : " + str(int(runtime_file)) + " seconds")
 
 #%% Create submission in right format
 
-submission_name = "submission_7kmer_0mis_rbf_svm.csv"
+submission_name = "submission_7kmer_2mis_rbf_svm.csv"
 
 id_test = [i for i in range(3000)]
 prediction_test = list(test_prediction[0]) + list(test_prediction[1]) + list(test_prediction[2])
