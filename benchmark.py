@@ -86,16 +86,15 @@ def load_data(train_name_features, test_size=0.20):
 
 # Models to train and evaluate
 MODELS = [
-    KernelSVMClassifier(kernel='rbf', alpha=5*1e-4),
-    KernelRidgeClassifier(kernel='rbf', alpha=1e-3),
+    KernelSVMClassifier(kernel='rbf', alpha=2*1e-4),
 ]
 
 #%% SELECT FEATURES
 
 use_mat_features=False
 use_kmers=True
-kmer_min_size = 7
-kmer_max_size = 7
+kmer_min_size = 6
+kmer_max_size = 6
 with_misplacement=True
 number_misplacements=2
 test_size=0.20

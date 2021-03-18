@@ -8,6 +8,7 @@ Created on Sun Feb 28 13:58:29 2021
 
 import pandas as pd
 import numpy as np
+import os
 import time
 
 from feature_extractor import *
@@ -83,8 +84,8 @@ def load_data_for_submission(train_name_features, test_name_features):
 test_prediction = {}
 dict_original_pattern_to_misplaced = None
 
-kmer_min_size = 8
-kmer_max_size = 8
+kmer_min_size = 6
+kmer_max_size = 6
 number_misplacements = 2
 with_misplacement = True
 
@@ -124,8 +125,8 @@ for k in range(3):
     print("TIME FOR EXTRACTION " + str(k) + " : " + str(int(checkpoint_1 - start_file)) + " seconds")
 
     ### Choice of Kernel
-    kernel_selected = KernelLogisticClassifier(kernel=GAUSSIAN_KERNEL, alpha=1e-5)
-    
+    kernel_selected = KernelSVMClassifier(kernel="rbf", alpha=2*1e-4)
+
     ### Kernel fitting
     print("FITTING")
     kernel_selected.fit(X_train, y_train)
@@ -143,7 +144,7 @@ for k in range(3):
 
 #%% Create submission in right format
 
-submission_name = "submission_7kmer_2mis_rbf_svm.csv"
+submission_name = "submission_6kmer_2mis_rbf_svm_tailored.csv"
 
 id_test = [i for i in range(3000)]
 prediction_test = list(test_prediction[0]) + list(test_prediction[1]) + list(test_prediction[2])
