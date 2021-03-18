@@ -2,6 +2,8 @@ import os
 import random
 from copy import deepcopy
 
+from sklearn.model_selection import GridSearchCV
+
 from feature_extractor import *
 from models import *
 
@@ -86,22 +88,28 @@ def load_data(train_name_features, test_size=0.20):
     return X_train, X_test, y_train, y_test
 
 
-# %% SELECT MODELS TO BENCHMARK
+# %% SELECT FEATURES
 
-# Models to train and evaluate
+use_mat_features = True
+use_kmers = False
+kmer_min_size = 4
+kmer_max_size = 4
+with_misplacement = True
+number_misplacements = 1
+test_size = 0.20
+do_cross_val_grid_search = True
+cross_val_kfold_k = 5
+
+# Models to benchmark Train/Test evaluation.
 MODELS = [
     KernelSVMClassifier(kernel='rbf', alpha=2 * 1e-4),
 ]
 
-# %% SELECT FEATURES
-
-use_mat_features = False
-use_kmers = True
-kmer_min_size = 6
-kmer_max_size = 6
-with_misplacement = True
-number_misplacements = 2
-test_size = 0.20
+# Model and parameters to benchmark using cross-validation grid-search.
+CV_MODEL = KernelRidgeClassifier()
+CV_TUNED_PARAMS = [
+    {'kernel': [GAUSSIAN_KERNEL], 'gamma': [1e-3, 'auto'], 'alpha': [1, 1e-2]},
+    {'kernel': [LINEAR_KERNEL], 'alpha': [1, 1e-2]}]
 
 # %% RUN FULL PIPELINE
 
@@ -138,11 +146,30 @@ for k in range(3):
 
         X_train, X_test = standardize_train_test(X_train, X_test)
 
-    for model in models:
+    # Cross-validation-based grid-search for CV_MODEL over CV_TUNED_PARAMS.
+    if do_cross_val_grid_search:
+        clf = GridSearchCV(
+            CV_MODEL, CV_TUNED_PARAMS, scoring='accuracy',
+            n_jobs=3, cv=cross_val_kfold_k
+        )
+        clf.fit(X_train, y_train)
+
         print(
-            f"Train and evaluate model: {model.__class__.__name__} "
-            f"{model.__dict__}")
-        model.fit(X_train, y_train)
+            f"Best parameters set found on development set: {clf.best_params_}")
+        print("Grid scores on development set:")
+        means = clf.cv_results_['mean_test_score']
+        stds = clf.cv_results_['std_test_score']
+        for mean, std, params in zip(means, stds, clf.cv_results_['params']):
+            print(f"\t{mean * 100:.1f}% (+/-{std * 2 * 100:.1f}%) for {params}")
+        print()
+
+    # Classic Train/Test comparison over MODELS list.
+    else:
+        for model in models:
+            print(
+                f"Train and evaluate model: {model.__class__.__name__} "
+                f"{model.__dict__}")
+            model.fit(X_train, y_train)
 
         y_train_pred = model.predict(X_train)
         train_accuracy = accuracy_score(y_train_pred, y_train)
