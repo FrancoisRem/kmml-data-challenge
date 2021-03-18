@@ -97,12 +97,13 @@ kmer_max_size = 4
 with_misplacement = True
 number_misplacements = 1
 test_size = 0.20
-do_cross_val_grid_search = True
+do_cross_val_grid_search = False
 cross_val_kfold_k = 5
 
 # Models to benchmark Train/Test evaluation.
 MODELS = [
     KernelSVMClassifier(kernel='rbf', alpha=2 * 1e-4),
+    KernelLogisticClassifier(kernel='rbf', alpha=2 * 1e-4),
 ]
 
 # Model and parameters to benchmark using cross-validation grid-search.
@@ -187,12 +188,12 @@ for k in range(3):
                 f"{model.__dict__}")
             model.fit(X_train, y_train)
 
-        y_train_pred = model.predict(X_train)
-        train_accuracy = accuracy_score(y_train_pred, y_train)
+            y_train_pred = model.predict(X_train)
+            train_accuracy = accuracy_score(y_train_pred, y_train)
 
-        y_test_pred = model.predict(X_test)
-        test_accuracy = accuracy_score(y_test_pred, y_test)
+            y_test_pred = model.predict(X_test)
+            test_accuracy = accuracy_score(y_test_pred, y_test)
 
-        print(
-            f"\tTrain {train_accuracy * 100:.1f}% "
-            f"| Test:{test_accuracy * 100:.1f}%")
+            print(
+                f"\tTrain {train_accuracy * 100:.1f}% "
+                f"| Test:{test_accuracy * 100:.1f}%")
