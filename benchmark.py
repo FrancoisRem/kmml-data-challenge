@@ -1,8 +1,9 @@
-from copy import deepcopy
+import os
 import random
+from copy import deepcopy
+
 from feature_extractor import *
 from models import *
-import os
 
 # Global initialization
 SEED = 2021
@@ -25,7 +26,8 @@ def compute_features(df,
                      use_mat_features=False,
                      use_kmers=True,
                      kmer_min_size=4, kmer_max_size=5, with_misplacement=True,
-                     number_misplacements=1, dict_original_pattern_to_misplaced=None):
+                     number_misplacements=1,
+                     dict_original_pattern_to_misplaced=None):
     list_features = []
     # Features created by professors
     if use_mat_features:
@@ -37,9 +39,10 @@ def compute_features(df,
 
     # Features of kmers frequency
     if use_kmers:
-        list_kmer_pattern, df, dict_original_pattern_to_misplaced = add_kmer_features(kmer_min_size, kmer_max_size,
-                                                  with_misplacement,
-                                                  number_misplacements, df, dict_original_pattern_to_misplaced)
+        list_kmer_pattern, df, dict_original_pattern_to_misplaced = add_kmer_features(
+            kmer_min_size, kmer_max_size,
+            with_misplacement,
+            number_misplacements, df, dict_original_pattern_to_misplaced)
         list_features += list_kmer_pattern
 
     return df, list_features, dict_original_pattern_to_misplaced
@@ -62,73 +65,77 @@ def split_train_test(df, list_features, test_size=0.20):
 
 
 def load_data(train_name_features, test_size=0.20):
-    
     ### Load full feature matrix
-    total_feature_array = np.load(FEATURE_FILE_PREFIX+train_name_features)
-    
+    total_feature_array = np.load(FEATURE_FILE_PREFIX + train_name_features)
+
     ### Load full label matrix
     Ytr_df = pd.read_csv(DATA_FILE_PREFIX + LABEL_FILE_PREFIX + str(k) + ".csv")
     total_label_array = Ytr_df['Bound'].to_numpy()
-    
+
     ### Split Train and Validation
-    test_idx = random.sample(range(0, 2000), int(total_label_array.shape[0]*test_size))
-    train_idx = [i for i in range(0,2000) if not(i in test_idx)]
-    
+    test_idx = random.sample(range(0, 2000),
+                             int(total_label_array.shape[0] * test_size))
+    train_idx = [i for i in range(0, 2000) if not (i in test_idx)]
+
     X_train = total_feature_array[train_idx, :]
     y_train = total_label_array[train_idx]
 
     X_test = total_feature_array[test_idx, :]
     y_test = total_label_array[test_idx]
-    
+
     return X_train, X_test, y_train, y_test
 
-#%% SELECT MODELS TO BENCHMARK
+
+# %% SELECT MODELS TO BENCHMARK
 
 # Models to train and evaluate
 MODELS = [
-    KernelSVMClassifier(kernel='rbf', alpha=2*1e-4),
+    KernelSVMClassifier(kernel='rbf', alpha=2 * 1e-4),
 ]
 
-#%% SELECT FEATURES
+# %% SELECT FEATURES
 
-use_mat_features=False
-use_kmers=True
+use_mat_features = False
+use_kmers = True
 kmer_min_size = 6
 kmer_max_size = 6
-with_misplacement=True
-number_misplacements=2
-test_size=0.20
+with_misplacement = True
+number_misplacements = 2
+test_size = 0.20
 
-#%% RUN FULL PIPELINE
+# %% RUN FULL PIPELINE
 
 dict_original_pattern_to_misplaced = None
 for k in range(3):
-    
+
     # Reinitialize models at each iteration
     models = deepcopy(MODELS)
     print(f"------PREDICTION FILE {k}------")
-    
+
     ### Check if features were already computed and saved
-    name_features = "features_"+str(k)+"_kmin_"+str(kmer_min_size)+"_kmax_"+str(kmer_max_size)
-    if with_misplacement :
-        name_features += "_mis_"+str(number_misplacements)
+    name_features = "features_" + str(k) + "_kmin_" + str(
+        kmer_min_size) + "_kmax_" + str(kmer_max_size)
+    if with_misplacement:
+        name_features += "_mis_" + str(number_misplacements)
     train_name_features = name_features + "_Xtrain.npy"
-    
-    if os.path.isfile(FEATURE_FILE_PREFIX+train_name_features):
+
+    if os.path.isfile(FEATURE_FILE_PREFIX + train_name_features):
         print("Features already computed and saved : loading...")
-        X_train, X_test, y_train, y_test = load_data(train_name_features, test_size=test_size)
-    
+        X_train, X_test, y_train, y_test = load_data(train_name_features,
+                                                     test_size=test_size)
+
     ### Otherwise compute them
-    else :
+    else:
         print("No previous similar computation : computing...")
         df = read_train_dataset(k)
-    
-        df, list_features, dict_original_pattern_to_misplaced = compute_features(df, use_mat_features,
-                                             use_kmers, kmer_min_size, kmer_max_size, with_misplacement,
-                                             number_misplacements, dict_original_pattern_to_misplaced)
-    
+
+        df, list_features, dict_original_pattern_to_misplaced = compute_features(
+            df, use_mat_features,
+            use_kmers, kmer_min_size, kmer_max_size, with_misplacement,
+            number_misplacements, dict_original_pattern_to_misplaced)
+
         X_train, X_test, y_train, y_test = split_train_test(df, list_features)
-    
+
         X_train, X_test = standardize_train_test(X_train, X_test)
 
     for model in models:
