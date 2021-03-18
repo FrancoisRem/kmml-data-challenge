@@ -89,6 +89,12 @@ kmer_max_size = 6
 number_misplacements = 2
 with_misplacement = True
 
+MODELS = [KernelSVMClassifier(kernel="rbf", alpha=2 * 1e-4)]
+
+# Handle single-model case.
+if len(MODELS) == 1:
+    MODELS *= 3
+
 for k in range(3):
     print("==============")
     
@@ -125,7 +131,10 @@ for k in range(3):
     print("TIME FOR EXTRACTION " + str(k) + " : " + str(int(checkpoint_1 - start_file)) + " seconds")
 
     ### Choice of Kernel
-    kernel_selected = KernelSVMClassifier(kernel="rbf", alpha=2*1e-4)
+    kernel_selected = MODELS[k]
+    print(
+        f"TRAINING MODEL: {kernel_selected.__class__.__name__} "
+        f"{model.__dict__}")
 
     ### Kernel fitting
     print("FITTING")
