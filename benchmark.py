@@ -163,6 +163,22 @@ for k in range(3):
             print(f"\t{mean * 100:.1f}% (+/-{std * 2 * 100:.1f}%) for {params}")
         print()
 
+        # Final evaluation training on the whole train dataset et evaluating
+        # on the unseen test dataset with the best found parameters.
+        model = clf.best_estimator_
+        print(
+            f"Train and evaluate best model: {model.__class__.__name__} "
+            f"{model.get_params()}")
+        y_train_pred = model.predict(X_train)
+        train_accuracy = accuracy_score(y_train_pred, y_train)
+
+        y_test_pred = model.predict(X_test)
+        test_accuracy = accuracy_score(y_test_pred, y_test)
+
+        print(
+            f"\tTrain {train_accuracy * 100:.1f}% "
+            f"| Test:{test_accuracy * 100:.1f}%")
+
     # Classic Train/Test comparison over MODELS list.
     else:
         for model in models:
