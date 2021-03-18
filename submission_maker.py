@@ -61,13 +61,21 @@ def read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_min_s
   X_test = df_test[list_features].to_numpy()
   X_train, X_test = standardize_train_test(X_train, X_test)
   
-  #scaled_test = (df_test[list_features] - df_test[list_features].mean())/df_test[list_features].std()
-  #X_test = scaled_total.to_numpy()
-  #X_train = scaled_total.to_numpy()
-
   return X_train, y_train, X_test, dict_original_pattern_to_misplaced
 
-#X_tr, y_tr, X_te = read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_min_size=3, kmer_max_size=6, with_misplacement=True, number_misplacements=1)
+def load_data_for_submission(train_name_features, test_name_features):
+    
+    ### Load Xtrain
+    X_train = np.load(FEATURE_FILE_PREFIX+train_name_features)
+    
+    ### Load Xtest
+    X_test = np.load(FEATURE_FILE_PREFIX+test_name_features)
+    
+    ### Load Ytrain
+    Ytr_df = pd.read_csv(DATA_FILE_PREFIX + LABEL_FILE_PREFIX + str(k) + ".csv")
+    y_train = Ytr_df['Bound'].to_numpy()
+    
+    return X_train, y_train, X_test
 
 #%% Actual Fitting and prediction
 
@@ -75,35 +83,42 @@ def read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_min_s
 test_prediction = {}
 dict_original_pattern_to_misplaced = None
 
-kmer_min_size = 7
-kmer_max_size = 7
+kmer_min_size = 8
+kmer_max_size = 8
 number_misplacements = 2
 with_misplacement = True
 
 for k in range(3):
     print("==============")
+    
     print("PREDICTION FILE " + str(k))
     start_file = time.time()
-    ### Dataset loader with feature choice
-    print("EXTRACT FEATURES")
-    X_train, y_train, X_test, dict_original_pattern_to_misplaced = read_dataset_train_test(k,
-                                                       use_mat_features=False,
-                                                       use_kmers=True,
-                                                       kmer_min_size=kmer_min_size,
-                                                       kmer_max_size=kmer_max_size,
-                                                       with_misplacement=with_misplacement,
-                                                       number_misplacements=number_misplacements,
-                                                       dict_original_pattern_to_misplaced=dict_original_pattern_to_misplaced)
-
-    ### Save features extracted
+    
+    ### Dataset loader  
     name_features = "features_"+str(k)+"_kmin_"+str(kmer_min_size)+"_kmax_"+str(kmer_max_size)
     if with_misplacement :
         name_features += "_mis_"+str(number_misplacements)
     train_name_features = name_features + "_Xtrain.npy"
-    np.save(FEATURE_FILE_PREFIX+train_name_features, X_train)
-    
     test_name_features = name_features + "_Xtest.npy"
-    np.save(FEATURE_FILE_PREFIX+test_name_features, X_test)
+    
+    if os.path.isfile(FEATURE_FILE_PREFIX+train_name_features):
+        print("LOADING FEATURES")
+        X_train, y_train, X_test = load_data_for_submission(train_name_features, test_name_features)
+        
+    else : 
+        print("EXTRACT FEATURES")
+        X_train, y_train, X_test, dict_original_pattern_to_misplaced = read_dataset_train_test(k,
+                                                           use_mat_features=False,
+                                                           use_kmers=True,
+                                                           kmer_min_size=kmer_min_size,
+                                                           kmer_max_size=kmer_max_size,
+                                                           with_misplacement=with_misplacement,
+                                                           number_misplacements=number_misplacements,
+                                                           dict_original_pattern_to_misplaced=dict_original_pattern_to_misplaced)
+    
+        ### Save features extracted
+        np.save(FEATURE_FILE_PREFIX+train_name_features, X_train)
+        np.save(FEATURE_FILE_PREFIX+test_name_features, X_test)
 
     checkpoint_1 = time.time()
     print("TIME FOR EXTRACTION " + str(k) + " : " + str(int(checkpoint_1 - start_file)) + " seconds")

@@ -86,19 +86,19 @@ def load_data(train_name_features, test_size=0.20):
 
 # Models to train and evaluate
 MODELS = [
-    KernelLogisticClassifier(kernel=LINEAR_KERNEL, alpha=1e-3),
-    KernelSVMClassifier(kernel=GAUSSIAN_KERNEL, alpha=1e-4),
+    KernelSVMClassifier(kernel='rbf', alpha=5*1e-4),
+    KernelRidgeClassifier(kernel='rbf', alpha=1e-3),
 ]
 
 #%% SELECT FEATURES
 
 use_mat_features=False
 use_kmers=True
-kmer_min_size = 4
-kmer_max_size = 4
+kmer_min_size = 7
+kmer_max_size = 7
 with_misplacement=True
-number_misplacements=3
-test_size=0.25
+number_misplacements=2
+test_size=0.20
 
 #%% RUN FULL PIPELINE
 
