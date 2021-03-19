@@ -153,6 +153,7 @@ for k in range(3):
             CV_MODEL, CV_TUNED_PARAMS, scoring='accuracy',
             n_jobs=3, cv=cross_val_kfold_k
         )
+        print(f"Starting grid-search cross-validation:\n\t{clf}\n")
         clf.fit(X_train, y_train)
 
         print(
@@ -178,7 +179,7 @@ for k in range(3):
 
         print(
             f"\tTrain {train_accuracy * 100:.1f}% "
-            f"| Test:{test_accuracy * 100:.1f}%")
+            f"| Test:{test_accuracy * 100:.1f}%\n")
 
     # Classic Train/Test comparison over MODELS list.
     else:
