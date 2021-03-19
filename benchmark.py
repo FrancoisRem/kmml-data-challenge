@@ -90,10 +90,10 @@ def load_data(train_name_features, test_size=0.20):
 
 # %% SELECT FEATURES
 
-use_mat_features = True
-use_kmers = False
-kmer_min_size = 4
-kmer_max_size = 4
+use_mat_features = False
+use_kmers = True
+kmer_min_size = 7
+kmer_max_size = 7
 with_misplacement = True
 number_misplacements = 1
 test_size = 0.20
@@ -107,10 +107,9 @@ MODELS = [
 ]
 
 # Model and parameters to benchmark using cross-validation grid-search.
-CV_MODEL = KernelRidgeClassifier()
+CV_MODEL = KernelSVMClassifier()
 CV_TUNED_PARAMS = [
-    {'kernel': [GAUSSIAN_KERNEL], 'gamma': [1e-3, 'auto'], 'alpha': [1, 1e-2]},
-    {'kernel': [LINEAR_KERNEL], 'alpha': [1, 1e-2]}]
+    {'kernel': [LINEAR_KERNEL], 'alpha': [1e-1, 1e-2, 1e-3]}]
 
 # %% RUN FULL PIPELINE
 

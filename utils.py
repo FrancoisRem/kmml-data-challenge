@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.spatial.distance import cdist
 
 
 def binary_regression_labels(y):
@@ -30,9 +29,11 @@ def gaussian_kernel_gram_matrix(X, Y, gamma):
     :param gamma: float, gamma coefficient in the exponential
     :return: np.array with shape nX, nY
     """
-    distances = cdist(X, Y, metric='sqeuclidean')
     if gamma == 'auto':
         gamma = 1 / X.shape[1]
+    sqnorm_X = np.linalg.norm(X, axis=1) ** 2
+    sqnorm_Y = np.linalg.norm(Y, axis=1) ** 2
+    distances = sqnorm_X[..., np.newaxis] + sqnorm_Y - 2 * np.dot(X, Y.T)
     return np.exp(-gamma * distances)
 
 
