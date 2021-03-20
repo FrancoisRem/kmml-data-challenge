@@ -134,7 +134,7 @@ for k in range(3):
     kernel_selected = MODELS[k]
     print(
         f"TRAINING MODEL: {kernel_selected.__class__.__name__} "
-        f"{model.__dict__}")
+        f"{kernel_selected.__dict__}")
 
     ### Kernel fitting
     print("FITTING")
