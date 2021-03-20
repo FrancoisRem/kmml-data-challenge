@@ -5,6 +5,7 @@ from copy import deepcopy
 from sklearn.model_selection import GridSearchCV
 
 from feature_extractor import *
+from kmer_processor import *
 from models import *
 
 # Global initialization
@@ -92,18 +93,17 @@ def load_data(train_name_features, test_size=0.20):
 
 use_mat_features = False
 use_kmers = True
-kmer_min_size = 7
-kmer_max_size = 7
+kmer_min_size = 12
+kmer_max_size = 12
 with_misplacement = True
-number_misplacements = 1
+number_misplacements = 2
 test_size = 0.20
 do_cross_val_grid_search = False
 cross_val_kfold_k = 5
-
+use_fast_kmer_process = True
 # Models to benchmark Train/Test evaluation.
 MODELS = [
-    KernelSVMClassifier(kernel='rbf', alpha=2 * 1e-4),
-    KernelLogisticClassifier(kernel='rbf', alpha=2 * 1e-4),
+    KernelSVMClassifier(kernel=LINEAR_KERNEL, alpha=1e-5),
 ]
 
 # Model and parameters to benchmark using cross-validation grid-search.
@@ -127,7 +127,24 @@ for k in range(3):
         name_features += "_mis_" + str(number_misplacements)
     train_name_features = name_features + "_Xtrain.npy"
 
-    if os.path.isfile(FEATURE_FILE_PREFIX + train_name_features):
+    if use_fast_kmer_process:
+        # TODO: add options to this branch such as random train/test split
+        # or options to standardize data.
+        # Only single k supported so far for simplicity.
+        assert kmer_min_size == kmer_max_size
+        df = read_train_dataset(k)
+        processor = KMerProcessor(df['seq'])
+        spectrums = processor.compute_kmer_mismatch(kmer_min_size,
+                                                    number_misplacements)
+        spectrums_matrix = compute_spectrums_matrix(processor.kmers_support,
+                                                    spectrums)
+        print(f"Shape of the spectrums_matrix: {spectrums_matrix.shape}")
+        X_train = spectrums_matrix[:1600]
+        X_test = spectrums_matrix[1600:]
+        y_train = df['Bound'][:1600].to_numpy()
+        y_test = df['Bound'][1600:].to_numpy()
+
+    elif os.path.isfile(FEATURE_FILE_PREFIX + train_name_features):
         print("Features already computed and saved : loading...")
         X_train, X_test, y_train, y_test = load_data(train_name_features,
                                                      test_size=test_size)
