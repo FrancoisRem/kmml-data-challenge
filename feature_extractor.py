@@ -11,6 +11,8 @@ import pandas as pd
 import numpy as np
 import itertools
 import time
+from tqdm import tqdm
+from kmer_processor import hamming_neighborhood
 
 #%% K-mers
 
@@ -152,14 +154,12 @@ def add_kmer_features(kmer_min_size, kmer_max_size, with_misplacement, number_mi
             
             ### Dico : key : original pattern and value : list of patterns with fewer misplacements than number_displacements
             dict_original_pattern_to_misplaced = {}
-            
             for k in kmer_patterns :
-                for pattern_original in kmer_patterns[k]:
-                    dict_original_pattern_to_misplaced[pattern_original] = []
-                    for pattern_compared in kmer_patterns[k]:
-                        if count_misplacements(pattern_original, pattern_compared) <= number_misplacements :
-                            dict_original_pattern_to_misplaced[pattern_original].append(pattern_compared)
-                            
+                print(f"Computing original_pattern_to_misplaced for k={k}:")
+                for pattern_original in tqdm(kmer_patterns[k]):
+                    dict_original_pattern_to_misplaced[pattern_original] = list(
+                        hamming_neighborhood(pattern_original,
+                                             number_misplacements))
         #print(dict_original_pattern_to_misplaced["AAA"])
         ### Application to the initial data
         df_featured = raw_df.copy()
