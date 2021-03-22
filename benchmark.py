@@ -117,18 +117,19 @@ scaling_features = False
 
 use_fast_kmer_process = True
 use_sparse_kmer_process = True
-do_cross_val_grid_search = True
+do_cross_val_grid_search = False
 cross_val_kfold_k = 5
 
+use_sum = True
 # Models to benchmark Train/Test evaluation.
 MODELS = [
-    KernelSVMClassifier(kernel=LINEAR_KERNEL, alpha=1e-4),
+    KernelSVMClassifier(kernel=SUM_KERNEL, alpha=1e-4),
 ]
 
 # Model and parameters to benchmark using cross-validation grid-search.
 CV_MODEL = KernelSVMClassifier()
 CV_TUNED_PARAMS = [
-    {'kernel': [GAUSSIAN_KERNEL], 'alpha': [5*1e-5, 1e-5, 5*1e-6, 1e-6]}]
+    {'kernel': [GAUSSIAN_KERNEL], 'alpha': [5 * 1e-5, 1e-5, 5 * 1e-6, 1e-6]}]
 
 # %% RUN FULL PIPELINE
 
@@ -148,7 +149,34 @@ for k in range(3):
         name_features += '_unscaled'
     train_name_features = name_features + "_Xtrain.npy"
 
-    if use_fast_kmer_process:
+    if use_sum:
+        df = read_train_dataset(k)
+        X_train = []
+        X_test = []
+        for kmer_size, nb_mismatch in ((8, 1), (11, 2)):
+            if use_sparse_kmer_process:
+                processor = SparseKMerProcessor(df['seq'])
+                spectrums = processor.compute_kmer_mismatch(kmer_size,
+                                                            nb_mismatch)
+
+                spectrums_matrix = compute_spectrums_matrix(spectrums,
+                                                            processor.kmers_support)
+                print(f"Spectrums_matrix - shape: {spectrums_matrix.shape}, size: {spectrums_matrix.nbytes/2**30:.2f}Gb")
+            # else:
+            #     processor = DenseKMerProcessor(df['seq'])
+            #     spectrums = processor.compute_kmer_mismatch(kmer_min_size,
+            #                                                 number_misplacements)
+            #
+            #     spectrums_matrix = compute_spectrums_matrix(spectrums)
+
+            X_train.append(spectrums_matrix[:1600])
+            X_test.append(spectrums_matrix[1600:])
+
+        y_train = df['Bound'][:1600].to_numpy()
+        y_test = df['Bound'][1600:].to_numpy()
+
+
+    elif use_fast_kmer_process:
         # TODO: add options to this branch such as random train/test split
         # or options to standardize data.
         # Only single k supported so far for simplicity.
