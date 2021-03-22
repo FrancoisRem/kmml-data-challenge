@@ -108,15 +108,15 @@ def random_splitting(full_matrix_features, full_label_vector, test_size=0.20):
 
 use_mat_features = False
 use_kmers = True
-kmer_min_size = 5
-kmer_max_size = 5
+kmer_min_size = 8
+kmer_max_size = 8
 with_misplacement = True
-number_misplacements = 1
-test_size = 0.20
-scaling_features = True
+number_misplacements = 2
+test_size = 0.25
+scaling_features = False
 
 use_fast_kmer_process = True
-use_sparse_kmer_process = False
+use_sparse_kmer_process = True
 do_cross_val_grid_search = True
 cross_val_kfold_k = 5
 
@@ -128,7 +128,7 @@ MODELS = [
 # Model and parameters to benchmark using cross-validation grid-search.
 CV_MODEL = KernelSVMClassifier()
 CV_TUNED_PARAMS = [
-    {'kernel': [LINEAR_KERNEL], 'alpha': [1e-1, 1e-2, 1e-3, 1e-6]}]
+    {'kernel': [GAUSSIAN_KERNEL], 'alpha': [5*1e-5, 1e-5, 5*1e-6, 1e-6]}]
 
 # %% RUN FULL PIPELINE
 
