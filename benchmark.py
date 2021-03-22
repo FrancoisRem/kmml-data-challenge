@@ -88,28 +88,47 @@ def load_data(train_name_features, test_size=0.20):
 
     return X_train, X_test, y_train, y_test
 
+def random_splitting(full_matrix_features, full_label_vector, test_size=0.20):
+    ### Split Train and Validation
+    test_idx = random.sample(range(0, 2000),
+                             int(full_label_vector.shape[0] * test_size))
+    train_idx = [i for i in range(0, 2000) if not (i in test_idx)]
+    
+    X_train = full_matrix_features[train_idx, :]
+    y_train = full_label_vector[train_idx]
 
+    X_test = full_matrix_features[test_idx, :]
+    y_test = full_label_vector[test_idx]
+    
+    return X_train, X_test, y_train, y_test
+    
+    
+    
 # %% SELECT FEATURES
 
 use_mat_features = False
 use_kmers = True
-kmer_min_size = 12
-kmer_max_size = 12
+kmer_min_size = 7
+kmer_max_size = 7
 with_misplacement = True
 number_misplacements = 2
 test_size = 0.20
-do_cross_val_grid_search = False
-cross_val_kfold_k = 5
+scaling_features = True
+
+
 use_fast_kmer_process = True
+do_cross_val_grid_search = True
+cross_val_kfold_k = 5
+
 # Models to benchmark Train/Test evaluation.
 MODELS = [
-    KernelSVMClassifier(kernel=LINEAR_KERNEL, alpha=1e-5),
+    KernelSVMClassifier(kernel=LINEAR_KERNEL, alpha=1e-4),
 ]
 
 # Model and parameters to benchmark using cross-validation grid-search.
 CV_MODEL = KernelSVMClassifier()
 CV_TUNED_PARAMS = [
-    {'kernel': [LINEAR_KERNEL], 'alpha': [1e-1, 1e-2, 1e-3]}]
+    {'kernel': [LINEAR_KERNEL], 'alpha': [1e-1, 1e-2, 1e-3, 1e-6]}]
 
 # %% RUN FULL PIPELINE
 
@@ -125,6 +144,8 @@ for k in range(3):
         kmer_min_size) + "_kmax_" + str(kmer_max_size)
     if with_misplacement:
         name_features += "_mis_" + str(number_misplacements)
+    if not(scaling_features) :
+        name_features += '_unscaled'
     train_name_features = name_features + "_Xtrain.npy"
 
     if use_fast_kmer_process:
@@ -139,10 +160,11 @@ for k in range(3):
         spectrums_matrix = compute_spectrums_matrix(processor.kmers_support,
                                                     spectrums)
         print(f"Shape of the spectrums_matrix: {spectrums_matrix.shape}")
-        X_train = spectrums_matrix[:1600]
-        X_test = spectrums_matrix[1600:]
-        y_train = df['Bound'][:1600].to_numpy()
-        y_test = df['Bound'][1600:].to_numpy()
+        
+        X_train, X_test, y_train, y_test = random_splitting(spectrums_matrix, df['Bound'].to_numpy(),test_size)
+
+        if scaling_features :
+            X_train, X_test = standardize_train_test(X_train, X_test)
 
     elif os.path.isfile(FEATURE_FILE_PREFIX + train_name_features):
         print("Features already computed and saved : loading...")
@@ -159,9 +181,10 @@ for k in range(3):
             use_kmers, kmer_min_size, kmer_max_size, with_misplacement,
             number_misplacements, dict_original_pattern_to_misplaced)
 
-        X_train, X_test, y_train, y_test = split_train_test(df, list_features)
-
-        X_train, X_test = standardize_train_test(X_train, X_test)
+        X_train, X_test, y_train, y_test = split_train_test(df, list_features, test_size)
+        
+        if scaling_features :
+            X_train, X_test = standardize_train_test(X_train, X_test)
 
     # Cross-validation-based grid-search for CV_MODEL over CV_TUNED_PARAMS.
     if do_cross_val_grid_search:
