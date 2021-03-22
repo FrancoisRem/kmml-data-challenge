@@ -62,7 +62,7 @@ def create_kmer_freq(kmer_patterns, input_string):
           dict_count_appearances[pattern]=0
     
     for kmer_size in kmer_patterns:
-        for idx in range(len(input_string)-kmer_size):
+        for idx in range(len(input_string)-kmer_size+1):
             dict_count_appearances[input_string[idx:idx+kmer_size]]+=1
     
     freq_values = list(dict_count_appearances.values())
@@ -100,7 +100,7 @@ def create_kmer_freq_with_misplacements(kmer_patterns, dict_original_pattern_to_
     
     
     for kmer_size in kmer_patterns:
-        for idx in range(len(input_string)-kmer_size):
+        for idx in range(len(input_string)-kmer_size+1):
             dict_count_appearances[input_string[idx:idx+kmer_size]]+=1
     
     ### Taking misplacement into account
@@ -154,12 +154,12 @@ def add_kmer_features(kmer_min_size, kmer_max_size, with_misplacement, number_mi
             
             ### Dico : key : original pattern and value : list of patterns with fewer misplacements than number_displacements
             dict_original_pattern_to_misplaced = {}
-            for k in kmer_patterns :
+            for k in kmer_patterns :              
                 print(f"Computing original_pattern_to_misplaced for k={k}:")
                 for pattern_original in tqdm(kmer_patterns[k]):
                     dict_original_pattern_to_misplaced[pattern_original] = list(
                         hamming_neighborhood(pattern_original,
-                                             number_misplacements))
+                                              number_misplacements))
         #print(dict_original_pattern_to_misplaced["AAA"])
         ### Application to the initial data
         df_featured = raw_df.copy()
