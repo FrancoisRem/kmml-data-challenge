@@ -91,10 +91,9 @@ for k in range(3):
     
     ### compare Gram matrix
     df = read_train_dataset(k)
-    processor = KMerProcessor(df['seq'])
+    processor = DenseKMerProcessor(df['seq'])
     spectrums = processor.compute_kmer_mismatch(kmer_size,mispl)
-    X_train_bis = compute_spectrums_matrix(processor.kmers_support,
-                                                spectrums)
+    X_train_bis = compute_spectrums_matrix(spectrums)
     
     Gram_matrix_new = kernel_new._gram_matrix(X_train_bis, X_train_bis)
     
