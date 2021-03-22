@@ -108,14 +108,15 @@ def random_splitting(full_matrix_features, full_label_vector, test_size=0.20):
 
 use_mat_features = False
 use_kmers = True
-kmer_min_size = 7
-kmer_max_size = 7
+kmer_min_size = 5
+kmer_max_size = 5
 with_misplacement = True
-number_misplacements = 2
+number_misplacements = 1
 test_size = 0.20
 scaling_features = True
 
 use_fast_kmer_process = True
+use_sparse_kmer_process = False
 do_cross_val_grid_search = True
 cross_val_kfold_k = 5
 
@@ -143,7 +144,7 @@ for k in range(3):
         kmer_min_size) + "_kmax_" + str(kmer_max_size)
     if with_misplacement:
         name_features += "_mis_" + str(number_misplacements)
-    if not (scaling_features):
+    if not scaling_features:
         name_features += '_unscaled'
     train_name_features = name_features + "_Xtrain.npy"
 
@@ -153,11 +154,21 @@ for k in range(3):
         # Only single k supported so far for simplicity.
         assert kmer_min_size == kmer_max_size
         df = read_train_dataset(k)
-        processor = KMerProcessor(df['seq'])
-        spectrums = processor.compute_kmer_mismatch(kmer_min_size,
-                                                    number_misplacements)
-        spectrums_matrix = compute_spectrums_matrix(processor.kmers_support,
-                                                    spectrums)
+
+        if use_sparse_kmer_process:
+            processor = SparseKMerProcessor(df['seq'])
+            spectrums = processor.compute_kmer_mismatch(kmer_min_size,
+                                                        number_misplacements)
+
+            spectrums_matrix = compute_spectrums_matrix(spectrums,
+                                                        processor.kmers_support)
+        else:
+            processor = DenseKMerProcessor(df['seq'])
+            spectrums = processor.compute_kmer_mismatch(kmer_min_size,
+                                                        number_misplacements)
+
+            spectrums_matrix = compute_spectrums_matrix(spectrums)
+
         print(f"Shape of the spectrums_matrix: {spectrums_matrix.shape}")
 
         X_train, X_test, y_train, y_test = random_splitting(spectrums_matrix,

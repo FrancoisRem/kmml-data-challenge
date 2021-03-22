@@ -1,3 +1,4 @@
+from collections import defaultdict
 from functools import partial
 
 import numpy as np
@@ -7,10 +8,10 @@ DNA_NUCLEOTIDES = {'A', 'T', 'G', 'C'}
 tqdm.pandas()
 
 
-class KMerProcessor:
+class SparseKMerProcessor:
     def __init__(self, seq_series):
         """
-        :param df: pandas series containing DNA sequences in the alphabet
+        :param seq_series: pandas series containing DNA sequences in the alphabet
          {'A', 'B', 'C', 'D'} and with fixed length L.
         """
         self.seq_series = seq_series
@@ -18,8 +19,7 @@ class KMerProcessor:
         self.kmers_neighborhood_cache = {}
 
     def _compute_kmer_mismatch_for_seq(self, seq, k, m):
-        # spectrum = defaultdict(int)
-        spectrum = {}
+        spectrum = defaultdict(int)
         seq_length = len(seq)
         for i in range(seq_length - k + 1):
             kmer = seq[i:i + k]
@@ -28,19 +28,46 @@ class KMerProcessor:
                     seq[i:i + k], m) & self.kmers_support
 
             for neighbor in self.kmers_neighborhood_cache[kmer]:
-                if neighbor in spectrum:
-                    spectrum[neighbor] += 1
-                else:
-                    spectrum[neighbor] = 1
+                spectrum[neighbor] += 1
+
         return spectrum
 
     def compute_kmer_mismatch(self, k, m):
         self.kmers_support = all_kmers_in_sequences(self.seq_series, k)
 
         worker = partial(self._compute_kmer_mismatch_for_seq, k=k, m=m)
-        print("Computing kmer mismatch spectrum:")
+        print("Computing sparse kmer mismatch spectrum:")
         spectrum_series = self.seq_series.progress_apply(worker)
+        return spectrum_series
 
+
+class DenseKMerProcessor:
+    def __init__(self, seq_series):
+        """
+        :param seq_series: pandas series containing DNA sequences in the alphabet
+         {'A', 'B', 'C', 'D'} and with fixed length L.
+        """
+        self.seq_series = seq_series
+        self.kmers_neighborhood_cache = {}
+
+    def _compute_kmer_mismatch_for_seq(self, seq, k, m):
+        spectrum = defaultdict(int)
+        seq_length = len(seq)
+        for i in range(seq_length - k + 1):
+            kmer = seq[i:i + k]
+            if kmer not in self.kmers_neighborhood_cache:
+                self.kmers_neighborhood_cache[kmer] = hamming_neighborhood(
+                    seq[i:i + k], m)
+
+            for neighbor in self.kmers_neighborhood_cache[kmer]:
+                spectrum[neighbor] += 1
+
+        return spectrum
+
+    def compute_kmer_mismatch(self, k, m):
+        worker = partial(self._compute_kmer_mismatch_for_seq, k=k, m=m)
+        print("Computing dense kmer mismatch spectrum:")
+        spectrum_series = self.seq_series.progress_apply(worker)
         return spectrum_series
 
 
@@ -108,7 +135,7 @@ def index_kmers(kmers_support):
     return kmer_to_index
 
 
-def compute_spectrums_matrix(kmers_support, spectrums):
+def compute_spectrums_matrix(spectrums, kmers_support=None):
     """
     Compute the matrix of the spectrums (dict kmer -> frequencies) as a dense
     numpy array.
@@ -119,6 +146,12 @@ def compute_spectrums_matrix(kmers_support, spectrums):
     :param spectrums:
     :return: (n, d)-np.array with n = len(spectrums) and d = len(kmer_support)
     """
+    if kmers_support is None:
+        kmers_support = set()
+        print("Computing the support of all kmers in spectrums:")
+        for spectrum in tqdm(spectrums):
+            kmers_support |= spectrum.keys()
+
     kmer_to_index = index_kmers(kmers_support)
     nb_sequences = len(spectrums)
     nb_kmers = len(kmer_to_index)
