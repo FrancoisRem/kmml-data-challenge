@@ -13,6 +13,7 @@ import time
 
 from feature_extractor import *
 from models import *
+from kmer_processor import *
 
 
 #%% Load data
@@ -23,7 +24,7 @@ TRAINING_FILE_PREFIX="Xtr"
 LABEL_FILE_PREFIX="Ytr"
 TEST_FILE_PREFIX="Xte"
 
-def read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_min_size=3, kmer_max_size=4, with_misplacement=True, number_misplacements=1, dict_original_pattern_to_misplaced=None):
+def read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_min_size=3, kmer_max_size=4, with_misplacement=True, number_misplacements=1, dict_original_pattern_to_misplaced=None, scaled=False):
   df_test = pd.read_csv(DATA_FILE_PREFIX+TEST_FILE_PREFIX + str(k) + ".csv")
   
   Xtr_df = pd.read_csv(DATA_FILE_PREFIX+TRAINING_FILE_PREFIX + str(k) + ".csv")
@@ -60,8 +61,12 @@ def read_dataset_train_test(k, use_mat_features=True, use_kmers=True, kmer_min_s
   ### Center data and to numpy
   X_train = df_train[list_features].to_numpy()
   X_test = df_test[list_features].to_numpy()
-  X_train, X_test = standardize_train_test(X_train, X_test)
   
+  if scaled :
+      print("SCALING")
+      X_train, X_test = standardize_train_test(X_train, X_test)
+  
+    
   return X_train, y_train, X_test, dict_original_pattern_to_misplaced
 
 def load_data_for_submission(train_name_features, test_name_features):
@@ -78,18 +83,67 @@ def load_data_for_submission(train_name_features, test_name_features):
     
     return X_train, y_train, X_test
 
+def read_dataset_train_test_fast_kmer_process(k, kmer_size = 3, number_misplacements = 1, scaled=False, use_sparse_kmer_process=False):
+    df_test = pd.read_csv(DATA_FILE_PREFIX+TEST_FILE_PREFIX + str(k) + ".csv")
+    
+    Xtr_df = pd.read_csv(DATA_FILE_PREFIX+TRAINING_FILE_PREFIX + str(k) + ".csv")
+    Ytr_df = pd.read_csv(DATA_FILE_PREFIX+LABEL_FILE_PREFIX + str(k) + ".csv")
+    df_train = pd.merge(left=Xtr_df, right=Ytr_df, on='Id')
+    
+    
+    total_seq_series = pd.concat([df_train['seq'],df_test['seq']], ignore_index=True)
+    
+    #print(type(total_seq_series))
+    
+    if use_sparse_kmer_process :
+        processor = SparseKMerProcessor(total_seq_series)
+        
+        spectrums = processor.compute_kmer_mismatch(kmer_size,
+                                                    number_misplacements)
+        
+        spectrums_matrix = compute_spectrums_matrix(spectrums,
+                                                        processor.kmers_support)
+        
+    else :
+        processor = DenseKMerProcessor(total_seq_series)
+        
+        spectrums = processor.compute_kmer_mismatch(kmer_size,
+                                                    number_misplacements)
+        
+        spectrums_matrix = compute_spectrums_matrix(spectrums)
+
+    #print(spectrums_matrix)
+    X_train = spectrums_matrix[:2000,:]
+    X_test = spectrums_matrix[2000:,:]
+    
+    ### Create X_train and y_train
+    y_train = df_train['Bound'].to_numpy()
+    
+    if scaled :
+      X_train, X_test = standardize_train_test(X_train, X_test)
+    
+    return X_train, y_train, X_test
+
+
+
 #%% Actual Fitting and prediction
 
 ### 3 different datasets
 test_prediction = {}
 dict_original_pattern_to_misplaced = None
 
-kmer_min_size = 6
-kmer_max_size = 6
-number_misplacements = 2
+scaling_features = False
+kmer_min_size = 7
+kmer_max_size = 7
+number_misplacements = 1
 with_misplacement = True
 
-MODELS = [KernelSVMClassifier(kernel="rbf", alpha=2 * 1e-4)]
+use_fast_kmer_process = True
+use_sparse_kmer_process = False
+
+MODELS = [KernelSVMClassifier(kernel="rbf", alpha=0.5 * 1e-4), #63
+          KernelSVMClassifier(kernel="rbf", alpha=1 * 1e-4), #64
+          KernelSVMClassifier(kernel="rbf", alpha=0.5 * 1e-4)] #75
 
 # Handle single-model case.
 if len(MODELS) == 1:
@@ -101,14 +155,22 @@ for k in range(3):
     print("PREDICTION FILE " + str(k))
     start_file = time.time()
     
-    ### Dataset loader  
+    ### Name of features to load if available  
     name_features = "features_"+str(k)+"_kmin_"+str(kmer_min_size)+"_kmax_"+str(kmer_max_size)
     if with_misplacement :
         name_features += "_mis_"+str(number_misplacements)
+    if not(scaling_features) :
+        name_features += '_unscaled'
     train_name_features = name_features + "_Xtrain.npy"
     test_name_features = name_features + "_Xtest.npy"
     
-    if os.path.isfile(FEATURE_FILE_PREFIX+train_name_features):
+    
+    if use_fast_kmer_process :
+        
+        assert kmer_min_size == kmer_max_size
+        X_train, y_train, X_test = read_dataset_train_test_fast_kmer_process(k, kmer_min_size, number_misplacements, scaling_features, use_sparse_kmer_process)
+    
+    elif os.path.isfile(FEATURE_FILE_PREFIX+train_name_features):
         print("LOADING FEATURES")
         X_train, y_train, X_test = load_data_for_submission(train_name_features, test_name_features)
         
@@ -153,7 +215,7 @@ for k in range(3):
 
 #%% Create submission in right format
 
-submission_name = "submission_6kmer_2mis_rbf_svm_tailored.csv"
+submission_name = "combination_7kmer_1mis_3_SVM_rbf.csv"
 
 id_test = [i for i in range(3000)]
 prediction_test = list(test_prediction[0]) + list(test_prediction[1]) + list(test_prediction[2])
