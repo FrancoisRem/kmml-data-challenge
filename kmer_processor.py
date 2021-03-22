@@ -31,7 +31,7 @@ class KMerProcessor:
                 if neighbor in spectrum:
                     spectrum[neighbor] += 1
                 else:
-                    spectrum[neighbor] = 0
+                    spectrum[neighbor] = 1
         return spectrum
 
     def compute_kmer_mismatch(self, k, m):
