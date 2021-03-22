@@ -133,17 +133,17 @@ test_prediction = {}
 dict_original_pattern_to_misplaced = None
 
 scaling_features = False
-kmer_min_size = 7
-kmer_max_size = 7
-number_misplacements = 1
+kmer_min_size = 8
+kmer_max_size = 8
+number_misplacements = 2
 with_misplacement = True
 
 use_fast_kmer_process = True
-use_sparse_kmer_process = False
+use_sparse_kmer_process = True
 
-MODELS = [KernelSVMClassifier(kernel="rbf", alpha=0.5 * 1e-4), #63
-          KernelSVMClassifier(kernel="rbf", alpha=1 * 1e-4), #64
-          KernelSVMClassifier(kernel="rbf", alpha=0.5 * 1e-4)] #75
+MODELS = [KernelSVMClassifier(kernel="rbf", alpha=5 * 1e-6), #67
+          KernelSVMClassifier(kernel="rbf", alpha=5 * 1e-6), #67
+          KernelSVMClassifier(kernel="rbf", alpha=5 * 1e-5)] #75
 
 # Handle single-model case.
 if len(MODELS) == 1:
@@ -215,7 +215,7 @@ for k in range(3):
 
 #%% Create submission in right format
 
-submission_name = "combination_7kmer_1mis_3_SVM_rbf.csv"
+submission_name = "combination_8kmer_2mis_3_SVM_rbf.csv"
 
 id_test = [i for i in range(3000)]
 prediction_test = list(test_prediction[0]) + list(test_prediction[1]) + list(test_prediction[2])
