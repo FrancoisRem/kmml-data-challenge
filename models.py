@@ -21,6 +21,8 @@ LINEAR_KERNEL = 'lin'
 # Constant for Gaussian (Radial Basis Function) kernel
 # K(x, y) = exp(-gamma * ||x - y||^2)
 GAUSSIAN_KERNEL = 'rbf'
+# Constant for Sum kernel: apply a sum of linear kernel on the list provided.
+SUM_KERNEL = 'sum'
 
 
 class KernelModel:
@@ -37,7 +39,8 @@ class KernelModel:
         :param gamma: float, coefficient for Gaussian kernel. Or 'auto' which
         gives gamma=1/(nb_features).
         """
-        assert kernel in [LINEAR_KERNEL, GAUSSIAN_KERNEL] or callable(kernel)
+        assert kernel in [LINEAR_KERNEL, GAUSSIAN_KERNEL,
+                          SUM_KERNEL] or callable(kernel)
         self.kernel_ = kernel
         self.gamma_ = gamma
 
@@ -58,9 +61,18 @@ class KernelModel:
         if self.kernel_ == GAUSSIAN_KERNEL:
             res = gaussian_kernel_gram_matrix(X, Y, self.gamma_)
 
+        if self.kernel_ == SUM_KERNEL:
+            assert type(X) == list
+            assert type(Y) == list
+            nb_kernels = len(X)
+            res = 0
+            for i in range(nb_kernels):
+                res += linear_kernel_gram_matrix(X[i], Y[i])
+
         if time_it:
             t1 = time.time()
             print(f"Gram matrix computation time: {t1 - t0:.2f}s")
+
         return res.toarray() if issparse(res) else res
 
         nX, dX = X.shape
@@ -293,7 +305,10 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
         """
         y = binary_regression_labels(y)
         K = self._gram_matrix(X, X)
-        n, _ = X.shape
+        if self.kernel_ == SUM_KERNEL:
+            n, _ = X[0].shape
+        else:
+            n, _ = X.shape
 
         C = 1 / (2 * self.alpha_ * n)
         coef = cp.Variable(n)

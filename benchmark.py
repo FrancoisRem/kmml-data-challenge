@@ -21,10 +21,12 @@ def read_train_dataset(k):
     return pd.merge(left=Xtr_df, right=Ytr_df, on='Id')
 
 
-def random_splitting(full_matrix_features, full_label_vector, test_size=0.20):
+def random_splitting(full_matrix_features, full_label_vector, test_size=0.20,
+                     test_idx=None):
     ### Split Train and Validation
-    test_idx = random.sample(range(0, 2000),
-                             int(full_label_vector.shape[0] * test_size))
+    if test_idx is None:
+        test_idx = random.sample(range(0, 2000),
+                                 int(full_label_vector.shape[0] * test_size))
     train_idx = [i for i in range(0, 2000) if not (i in test_idx)]
 
     X_train = full_matrix_features[train_idx, :]
@@ -36,19 +38,62 @@ def random_splitting(full_matrix_features, full_label_vector, test_size=0.20):
     return X_train, X_test, y_train, y_test
 
 
+def process_kmer_dataset(df, kmer_size, number_misplacements, test_size=0.20,
+                         test_idx=None, scaling_features=True,
+                         exhaustive_spectrum=True, use_sparse_matrix=True):
+    if exhaustive_spectrum:
+        processor = DenseKMerProcessor(df['seq'])
+        spectrums = processor.compute_kmer_mismatch(kmer_size,
+                                                    number_misplacements)
+        spectrums_matrix = compute_spectrums_matrix(spectrums,
+                                                    sparse=use_sparse_matrix)
+    else:
+        processor = SparseKMerProcessor(df['seq'])
+        spectrums = processor.compute_kmer_mismatch(kmer_size,
+                                                    number_misplacements)
+
+        spectrums_matrix = compute_spectrums_matrix(spectrums,
+                                                    processor.kmers_support,
+                                                    sparse=use_sparse_matrix)
+
+    if issparse(spectrums_matrix):
+        size_bytes = spectrums_matrix.data.nbytes \
+                     + spectrums_matrix.indptr.nbytes \
+                     + spectrums_matrix.indices.nbytes
+    else:
+        size_bytes = spectrums_matrix.nbytes
+    print(
+        f"Spectrums_matrix shape: {spectrums_matrix.shape},"
+        f" size: {size_bytes / 2 ** 30:.2f}Gb")
+
+    X_train, X_test, y_train, y_test = random_splitting(spectrums_matrix,
+                                                        df['Bound'].to_numpy(),
+                                                        test_size=test_size,
+                                                        test_idx=test_idx)
+
+    if scaling_features:
+        X_train, X_test = standardize_train_test(X_train, X_test)
+
+    return X_train, X_test, y_train, y_test
+
+
 # %% SELECT FEATURES
 kmer_size = 9
 number_misplacements = 1
 test_size = 0.25
 scaling_features = False
 
-use_sparse_kmer_process = False
+use_sparse_matrix = False
+exhaustive_spectrum = True
 do_cross_val_grid_search = False
 cross_val_kfold_k = 5
 
+# If not empty, --> use sum kernel.
+SUM_KERNEL_PARAMS = [(7, 1), (8, 1)]
+
 # Models to benchmark Train/Test evaluation.
 MODELS = [
-    KernelSVMClassifier(kernel=LINEAR_KERNEL, alpha=1e-4),
+    KernelSVMClassifier(kernel=SUM_KERNEL, alpha=1e-4),
 ]
 
 # Model and parameters to benchmark using cross-validation grid-search.
@@ -63,47 +108,39 @@ for k in range(3):
     print(f"------PREDICTION FILE {k}------")
     df = read_train_dataset(k)
 
-    if use_sparse_kmer_process:
-        processor = SparseKMerProcessor(df['seq'])
-        spectrums = processor.compute_kmer_mismatch(kmer_size,
-                                                    number_misplacements)
+    if SUM_KERNEL_PARAMS:
+        df = read_train_dataset(k)
+        X_train_list = []
+        X_test_list = []
+        full_label_vector = df['Bound'].to_numpy()
 
-        spectrums_matrix = compute_spectrums_matrix(spectrums,
-                                                    processor.kmers_support,
-                                                    sparse=False)
+        # Very important: need consistent indices for train/test split.
+        test_idx_sum_kernel = random.sample(range(0, 2000),
+                                            int(full_label_vector.shape[
+                                                    0] * test_size))
+
+        for km_size, nb_mismatch in SUM_KERNEL_PARAMS:
+            X_train, X_test, y_train, y_test = process_kmer_dataset(df,
+                                                                    km_size,
+                                                                    nb_mismatch,
+                                                                    test_size=test_size,
+                                                                    test_idx=test_idx_sum_kernel,
+                                                                    scaling_features=scaling_features,
+                                                                    exhaustive_spectrum=exhaustive_spectrum,
+                                                                    use_sparse_matrix=use_sparse_matrix)
+            X_train_list.append(X_train)
+            X_test_list.append(X_test)
+
+        X_train = X_train_list
+        X_test = X_test_list
+
     else:
-        processor = DenseKMerProcessor(df['seq'])
-        spectrums = processor.compute_kmer_mismatch(kmer_size,
-                                                    number_misplacements)
-        spectrums_matrix = compute_spectrums_matrix(spectrums,
-                                                    sparse=True)
-
-    if issparse(spectrums_matrix):
-        size_bytes = spectrums_matrix.data.nbytes \
-                     + spectrums_matrix.indptr.nbytes \
-                     + spectrums_matrix.indices.nbytes
-    else:
-        size_bytes = spectrums_matrix.nbytes
-    print(
-        f"Spectrums_matrix shape: {spectrums_matrix.shape}, size: {size_bytes / 2 ** 30:.2f}Gb")
-
-    # a = spectrums_matrix
-    # if type(a) == np.array:
-    #     pass
-    # else:
-    # print(
-    #     f"size {(a.data.nbytes + a.indptr.nbytes + a.indices.nbytes) / 10 ** 9}")
-    # exit()
-
-    # np.save(FEATURE_FILE_PREFIX + train_name_features, spectrums_matrix)
-
-    X_train, X_test, y_train, y_test = random_splitting(spectrums_matrix,
-                                                        df[
-                                                            'Bound'].to_numpy(),
-                                                        test_size)
-
-    if scaling_features:
-        X_train, X_test = standardize_train_test(X_train, X_test)
+        X_train, X_test, y_train, y_test = process_kmer_dataset(df, kmer_size,
+                                                                number_misplacements,
+                                                                test_size=test_size,
+                                                                test_idx=None,
+                                                                exhaustive_spectrum=exhaustive_spectrum,
+                                                                use_sparse_matrix=use_sparse_matrix)
 
     # Cross-validation-based grid-search for CV_MODEL over CV_TUNED_PARAMS.
     if do_cross_val_grid_search:
