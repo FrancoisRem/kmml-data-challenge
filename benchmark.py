@@ -39,7 +39,7 @@ def random_splitting(full_matrix_features, full_label_vector, test_size=0.20,
 
 
 def process_kmer_dataset(df, kmer_size, number_misplacements, test_size=0.20,
-                         test_idx=None,
+                         test_idx=None, scaling_features= True,
                          exhaustive_spectrum=True, use_sparse_matrix=True):
     if exhaustive_spectrum:
         processor = DenseKMerProcessor(df['seq'])
@@ -66,11 +66,10 @@ def process_kmer_dataset(df, kmer_size, number_misplacements, test_size=0.20,
         f"Spectrums_matrix shape: {spectrums_matrix.shape}, size: {size_bytes / 2 ** 30:.2f}Gb")
 
     X_train, X_test, y_train, y_test = random_splitting(spectrums_matrix,
-                                                        df[
-                                                            'Bound'].to_numpy(),
+                                                        df['Bound'].to_numpy(),
                                                         test_size=test_size,
                                                         test_idx=test_idx)
-
+    #print(X_train)
     if scaling_features:
         X_train, X_test = standardize_train_test(X_train, X_test)
 
@@ -80,19 +79,19 @@ def process_kmer_dataset(df, kmer_size, number_misplacements, test_size=0.20,
 # %% SELECT FEATURES
 kmer_size = 9
 number_misplacements = 1
-test_size = 0.25
+test_size = 0.20
 scaling_features = False
 
-use_sparse_kmer_process = False
-do_cross_val_grid_search = False
+exhaustive_spectrum = True
+do_cross_val_grid_search = True
 cross_val_kfold_k = 5
 
 # If not empty, --> use some kernel.
-SUM_KERNEL_PARAMS = [(5, 1), (3, 1)]
+SUM_KERNEL_PARAMS = [(7,1), (6,1), (8,2)]
 
 # Models to benchmark Train/Test evaluation.
 MODELS = [
-    KernelSVMClassifier(kernel=SUM_KERNEL, alpha=1e-4),
+    KernelSVMClassifier(kernel=[GAUSSIAN_KERNEL, GAUSSIAN_KERNEL, GAUSSIAN_KERNEL], alpha=1e-5),
 ]
 
 # Model and parameters to benchmark using cross-validation grid-search.
@@ -102,30 +101,36 @@ CV_TUNED_PARAMS = [
 
 # %% RUN FULL PIPELINE
 for k in range(3):
+    
     # Reinitialize models at each iteration
     models = deepcopy(MODELS)
     print(f"------PREDICTION FILE {k}------")
     df = read_train_dataset(k)
 
     if SUM_KERNEL_PARAMS:
+        
         df = read_train_dataset(k)
         X_train_list = []
         X_test_list = []
         full_label_vector = df['Bound'].to_numpy()
+        
         # Very important: need consistent indices for train/test split.
         test_idx_sum_kernel = random.sample(range(0, 2000),
                                             int(full_label_vector.shape[
                                                     0] * test_size))
+        
         for km_size, nb_mismatch in SUM_KERNEL_PARAMS:
             X_train, X_test, y_train, y_test = process_kmer_dataset(df,
                                                                     km_size,
                                                                     nb_mismatch,
                                                                     test_size=test_size,
                                                                     test_idx=test_idx_sum_kernel,
-                                                                    exhaustive_spectrum=True,
-                                                                    use_sparse_matrix=True)
+                                                                    scaling_features= scaling_features,
+                                                                    exhaustive_spectrum=exhaustive_spectrum,
+                                                                    use_sparse_matrix=False)
             X_train_list.append(X_train)
             X_test_list.append(X_test)
+        
         X_train = X_train_list
         X_test = X_test_list
 
@@ -134,7 +139,7 @@ for k in range(3):
                                                                 number_misplacements,
                                                                 test_size=test_size,
                                                                 test_idx=None,
-                                                                exhaustive_spectrum=True,
+                                                                exhaustive_spectrum=exhaustive_spectrum,
                                                                 use_sparse_matrix=True)
 
     # Cross-validation-based grid-search for CV_MODEL over CV_TUNED_PARAMS.

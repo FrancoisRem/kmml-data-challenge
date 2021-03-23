@@ -39,8 +39,7 @@ class KernelModel:
         :param gamma: float, coefficient for Gaussian kernel. Or 'auto' which
         gives gamma=1/(nb_features).
         """
-        assert kernel in [LINEAR_KERNEL, GAUSSIAN_KERNEL,
-                          SUM_KERNEL] or callable(kernel)
+        assert kernel in [LINEAR_KERNEL, GAUSSIAN_KERNEL, SUM_KERNEL] or callable(kernel) or type(kernel)==list
         self.kernel_ = kernel
         self.gamma_ = gamma
 
@@ -68,21 +67,32 @@ class KernelModel:
             res = 0
             for i in range(nb_kernels):
                 res += linear_kernel_gram_matrix(X[i], Y[i])
-            return res
-
-        if time_it:
-            t1 = time.time()
-            print(f"Gram matrix computation time: {t1 - t0:.2f}s")
-        return res.toarray() if issparse(res) else res
-
-        if self.kernel_ == SUM_KERNEL:
+        
+        if type(self.kernel_) == list:
             assert type(X) == list
             assert type(Y) == list
             nb_kernels = len(X)
             res = 0
             for i in range(nb_kernels):
-                res += linear_kernel_gram_matrix(X[i], Y[i])
-            return res
+                if self.kernel_[i] == GAUSSIAN_KERNEL:
+                    res += gaussian_kernel_gram_matrix(X[i], Y[i], gamma='auto')
+                else :
+                    res += linear_kernel_gram_matrix(X[i], Y[i])
+                    
+        if time_it:
+            t1 = time.time()
+            print(f"Gram matrix computation time: {t1 - t0:.2f}s")
+        
+        return res.toarray() if issparse(res) else res
+
+        # if self.kernel_ == SUM_KERNEL:
+        #     assert type(X) == list
+        #     assert type(Y) == list
+        #     nb_kernels = len(X)
+        #     res = 0
+        #     for i in range(nb_kernels):
+        #         res += linear_kernel_gram_matrix(X[i], Y[i])
+        #     return res.toarray() if issparse(res) else res
 
         nX, dX = X.shape
         nY, dY = Y.shape
@@ -314,7 +324,7 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
         """
         y = binary_regression_labels(y)
         K = self._gram_matrix(X, X)
-        if self.kernel_ == SUM_KERNEL:
+        if self.kernel_ == SUM_KERNEL or type(self.kernel_ ) == list:
             n, _ = X[0].shape
         else:
             n, _ = X.shape
