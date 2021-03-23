@@ -80,7 +80,7 @@ def load_data_for_submission(train_name_features, test_name_features):
     
     return X_train, y_train, X_test
 
-def read_dataset_train_test_fast_kmer_process(k, kmer_size = 3, number_misplacements = 1, scaled=False, use_sparse_kmer_process=False):
+def read_dataset_train_test_fast_kmer_process(k, kmer_size = 3, number_misplacements = 1, scaling_features=False, exhaustive_spectrum=True, use_sparse_matrix=False):
     df_test = pd.read_csv(DATA_FILE_PREFIX+TEST_FILE_PREFIX + str(k) + ".csv")
     
     Xtr_df = pd.read_csv(DATA_FILE_PREFIX+TRAINING_FILE_PREFIX + str(k) + ".csv")
@@ -92,31 +92,43 @@ def read_dataset_train_test_fast_kmer_process(k, kmer_size = 3, number_misplacem
     
     #print(type(total_seq_series))
     
-    if use_sparse_kmer_process :
+    if exhaustive_spectrum :
+        
+        processor = DenseKMerProcessor(total_seq_series)
+        
+        spectrums = processor.compute_kmer_mismatch(kmer_size,
+                                                    number_misplacements)
+        
+        spectrums_matrix = compute_spectrums_matrix(spectrums,
+                                                    sparse=use_sparse_matrix)
+        
+    else :
         processor = SparseKMerProcessor(total_seq_series)
         
         spectrums = processor.compute_kmer_mismatch(kmer_size,
                                                     number_misplacements)
         
         spectrums_matrix = compute_spectrums_matrix(spectrums,
-                                                        processor.kmers_support)
-        
-    else :
-        processor = DenseKMerProcessor(total_seq_series)
-        
-        spectrums = processor.compute_kmer_mismatch(kmer_size,
-                                                    number_misplacements)
-        
-        spectrums_matrix = compute_spectrums_matrix(spectrums)
+                                                    processor.kmers_support,
+                                                    sparse=use_sparse_matrix)
+    
+    if issparse(spectrums_matrix):
+        size_bytes = spectrums_matrix.data.nbytes \
+                     + spectrums_matrix.indptr.nbytes \
+                     + spectrums_matrix.indices.nbytes
+    else:
+        size_bytes = spectrums_matrix.nbytes
+    print(
+        f"Spectrums_matrix shape: {spectrums_matrix.shape},"
+        f" size: {size_bytes / 2 ** 30:.2f}Gb")
 
-    #print(spectrums_matrix)
     X_train = spectrums_matrix[:2000,:]
     X_test = spectrums_matrix[2000:,:]
     
     ### Create X_train and y_train
     y_train = df_train['Bound'].to_numpy()
     
-    if scaled :
+    if scaling_features :
       X_train, X_test = standardize_train_test(X_train, X_test)
     
     return X_train, y_train, X_test
@@ -129,18 +141,26 @@ def read_dataset_train_test_fast_kmer_process(k, kmer_size = 3, number_misplacem
 test_prediction = {}
 dict_original_pattern_to_misplaced = None
 
-scaling_features = False
 kmer_min_size = 8
 kmer_max_size = 8
 number_misplacements = 2
 with_misplacement = True
+scaling_features = False
 
 use_fast_kmer_process = True
-use_sparse_kmer_process = True
+use_sparse_matrix = True
+exhaustive_spectrum = True
 
-MODELS = [KernelSVMClassifier(kernel="rbf", alpha=5 * 1e-6), #67
-          KernelSVMClassifier(kernel="rbf", alpha=5 * 1e-6), #67
-          KernelSVMClassifier(kernel="rbf", alpha=5 * 1e-5)] #75
+# If not empty, --> use sum kernel: provide list of kernel as kernel with the
+# same size as SUM_KERNEL_PARAMS.
+SUM_KERNEL_SPECTRUM_PARAMS = [(7, 1), (8, 2), (10, 3)]
+SUM_KERNEL_KERNELS = [GAUSSIAN_KERNEL, GAUSSIAN_KERNEL, GAUSSIAN_KERNEL]
+
+# Models to benchmark Train/Test evaluation.
+MODELS = [
+    KernelSVMClassifier(kernel=SUM_KERNEL_KERNELS, alpha=1e-4),
+]
+
 
 # Handle single-model case.
 if len(MODELS) == 1:
@@ -156,6 +176,7 @@ for k in range(3):
     name_features = "features_"+str(k)+"_kmin_"+str(kmer_min_size)+"_kmax_"+str(kmer_max_size)
     if with_misplacement :
         name_features += "_mis_"+str(number_misplacements)
+    
     if not(scaling_features) :
         name_features += '_unscaled'
     train_name_features = name_features + "_Xtrain.npy"
@@ -163,29 +184,33 @@ for k in range(3):
     
     
     if use_fast_kmer_process :
-        
-        assert kmer_min_size == kmer_max_size
-        X_train, y_train, X_test = read_dataset_train_test_fast_kmer_process(k, kmer_min_size, number_misplacements, scaling_features, use_sparse_kmer_process)
+        if SUM_KERNEL_SPECTRUM_PARAMS:
+            
+            X_train_list = []
+            X_test_list = []
+    
+            for km_size, nb_mismatch in SUM_KERNEL_SPECTRUM_PARAMS:
+                X_train, y_train, X_test = read_dataset_train_test_fast_kmer_process(k, km_size, 
+                                                                                 nb_mismatch, 
+                                                                                 scaling_features=scaling_features,
+                                                                                 exhaustive_spectrum=exhaustive_spectrum,
+                                                                                 use_sparse_matrix=use_sparse_matrix)
+                X_train_list.append(X_train)
+                X_test_list.append(X_test)
+    
+            X_train = X_train_list
+            X_test = X_test_list
+            
+        else :
+            assert kmer_min_size == kmer_max_size
+            X_train, y_train, X_test = read_dataset_train_test_fast_kmer_process(k, kmer_min_size, 
+                                                                                 number_misplacements, scaling_features, 
+                                                                                 use_sparse_kmer_process)
     
     elif os.path.isfile(FEATURE_FILE_PREFIX+train_name_features):
         print("LOADING FEATURES")
         X_train, y_train, X_test = load_data_for_submission(train_name_features, test_name_features)
         
-    else : 
-        print("EXTRACT FEATURES")
-        X_train, y_train, X_test, dict_original_pattern_to_misplaced = read_dataset_train_test(k,
-                                                           use_mat_features=False,
-                                                           use_kmers=True,
-                                                           kmer_min_size=kmer_min_size,
-                                                           kmer_max_size=kmer_max_size,
-                                                           with_misplacement=with_misplacement,
-                                                           number_misplacements=number_misplacements,
-                                                           dict_original_pattern_to_misplaced=dict_original_pattern_to_misplaced)
-    
-        ### Save features extracted
-        np.save(FEATURE_FILE_PREFIX+train_name_features, X_train)
-        np.save(FEATURE_FILE_PREFIX+test_name_features, X_test)
-
     checkpoint_1 = time.time()
     print("TIME FOR EXTRACTION " + str(k) + " : " + str(int(checkpoint_1 - start_file)) + " seconds")
 
