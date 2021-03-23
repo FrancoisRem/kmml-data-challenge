@@ -78,7 +78,7 @@ def process_kmer_dataset(df, kmer_size, number_misplacements, test_size=0.20,
 
 
 # %% SELECT FEATURES
-kmer_size = 9
+kmer_size = 7
 number_misplacements = 1
 test_size = 0.25
 scaling_features = False
@@ -88,12 +88,14 @@ exhaustive_spectrum = True
 do_cross_val_grid_search = False
 cross_val_kfold_k = 5
 
-# If not empty, --> use sum kernel.
-SUM_KERNEL_PARAMS = [(7, 1), (8, 1)]
+# If not empty, --> use sum kernel: provide list of kernel as kernel with the
+# same size as SUM_KERNEL_PARAMS.
+SUM_KERNEL_SPECTRUM_PARAMS = [(7, 1), (8, 1)]
+SUM_KERNEL_KERNELS = [LINEAR_KERNEL, GAUSSIAN_KERNEL]
 
 # Models to benchmark Train/Test evaluation.
 MODELS = [
-    KernelSVMClassifier(kernel=SUM_KERNEL, alpha=1e-4),
+    KernelSVMClassifier(kernel=SUM_KERNEL_KERNELS, alpha=1e-4),
 ]
 
 # Model and parameters to benchmark using cross-validation grid-search.
@@ -108,7 +110,7 @@ for k in range(3):
     print(f"------PREDICTION FILE {k}------")
     df = read_train_dataset(k)
 
-    if SUM_KERNEL_PARAMS:
+    if SUM_KERNEL_SPECTRUM_PARAMS:
         df = read_train_dataset(k)
         X_train_list = []
         X_test_list = []
@@ -119,7 +121,7 @@ for k in range(3):
                                             int(full_label_vector.shape[
                                                     0] * test_size))
 
-        for km_size, nb_mismatch in SUM_KERNEL_PARAMS:
+        for km_size, nb_mismatch in SUM_KERNEL_SPECTRUM_PARAMS:
             X_train, X_test, y_train, y_test = process_kmer_dataset(df,
                                                                     km_size,
                                                                     nb_mismatch,

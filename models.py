@@ -21,8 +21,6 @@ LINEAR_KERNEL = 'lin'
 # Constant for Gaussian (Radial Basis Function) kernel
 # K(x, y) = exp(-gamma * ||x - y||^2)
 GAUSSIAN_KERNEL = 'rbf'
-# Constant for Sum kernel: apply a sum of linear kernel on the list provided.
-SUM_KERNEL = 'sum'
 
 
 class KernelModel:
@@ -39,8 +37,8 @@ class KernelModel:
         :param gamma: float, coefficient for Gaussian kernel. Or 'auto' which
         gives gamma=1/(nb_features).
         """
-        assert kernel in [LINEAR_KERNEL, GAUSSIAN_KERNEL,
-                          SUM_KERNEL] or callable(kernel)
+        assert kernel in [LINEAR_KERNEL, GAUSSIAN_KERNEL] or callable(
+            kernel) or type(kernel) == list
         self.kernel_ = kernel
         self.gamma_ = gamma
 
@@ -55,34 +53,37 @@ class KernelModel:
         if time_it:
             t0 = time.time()
 
-        if self.kernel_ == LINEAR_KERNEL:
-            res = linear_kernel_gram_matrix(X, Y)
+        if type(self.kernel_) == list:
+            assert type(X) == type(Y) == list
+            assert len(X) == len(Y)
+            kernels = self.kernel_
+        else:
+            kernels = [self.kernel_]
+            X, Y = [X], [Y]
 
-        if self.kernel_ == GAUSSIAN_KERNEL:
-            res = gaussian_kernel_gram_matrix(X, Y, self.gamma_)
-
-        if self.kernel_ == SUM_KERNEL:
-            assert type(X) == list
-            assert type(Y) == list
-            nb_kernels = len(X)
-            res = 0
-            for i in range(nb_kernels):
+        res = 0
+        for i, kernel in enumerate(kernels):
+            if kernel == LINEAR_KERNEL:
                 res += linear_kernel_gram_matrix(X[i], Y[i])
+
+            elif kernel == GAUSSIAN_KERNEL:
+                res += gaussian_kernel_gram_matrix(X[i], Y[i], self.gamma_)
+
+            else:
+                nX, dX = X[i].shape
+                nY, dY = Y[i].shape
+                assert dX == dY
+                K = np.zeros([nX, nY])
+                for k in range(nX):
+                    for l in range(nY):
+                        K[k, l] = kernel(X[k], Y[l])
+                res += K
 
         if time_it:
             t1 = time.time()
             print(f"Gram matrix computation time: {t1 - t0:.2f}s")
 
         return res.toarray() if issparse(res) else res
-
-        nX, dX = X.shape
-        nY, dY = Y.shape
-        assert dX == dY
-        K = np.zeros([nX, nY])
-        for i in range(nX):
-            for j in range(nY):
-                K[i, j] = self.kernel_(X[i], Y[j])
-        return K
 
 
 """BEGIN: methods derived from the scikit-learn library and used for 
@@ -305,7 +306,7 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
         """
         y = binary_regression_labels(y)
         K = self._gram_matrix(X, X)
-        if self.kernel_ == SUM_KERNEL:
+        if type(self.kernel_) == list:
             n, _ = X[0].shape
         else:
             n, _ = X.shape
