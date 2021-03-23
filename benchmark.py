@@ -82,8 +82,9 @@ number_misplacements = 1
 test_size = 0.20
 scaling_features = False
 
+use_sparse_matrix = False
 exhaustive_spectrum = True
-do_cross_val_grid_search = True
+do_cross_val_grid_search = False
 cross_val_kfold_k = 5
 
 # If not empty, --> use some kernel.
@@ -91,7 +92,7 @@ SUM_KERNEL_PARAMS = [(7,1), (6,1), (8,2)]
 
 # Models to benchmark Train/Test evaluation.
 MODELS = [
-    KernelSVMClassifier(kernel=[GAUSSIAN_KERNEL, GAUSSIAN_KERNEL, GAUSSIAN_KERNEL], alpha=1e-5),
+    KernelSVMClassifier(kernel=[GAUSSIAN_KERNEL, GAUSSIAN_KERNEL, GAUSSIAN_KERNEL], alpha=1e-4),
 ]
 
 # Model and parameters to benchmark using cross-validation grid-search.
@@ -127,7 +128,7 @@ for k in range(3):
                                                                     test_idx=test_idx_sum_kernel,
                                                                     scaling_features= scaling_features,
                                                                     exhaustive_spectrum=exhaustive_spectrum,
-                                                                    use_sparse_matrix=False)
+                                                                    use_sparse_matrix=use_sparse_matrix)
             X_train_list.append(X_train)
             X_test_list.append(X_test)
         
@@ -140,7 +141,7 @@ for k in range(3):
                                                                 test_size=test_size,
                                                                 test_idx=None,
                                                                 exhaustive_spectrum=exhaustive_spectrum,
-                                                                use_sparse_matrix=True)
+                                                                use_sparse_matrix=use_sparse_matrix)
 
     # Cross-validation-based grid-search for CV_MODEL over CV_TUNED_PARAMS.
     if do_cross_val_grid_search:
