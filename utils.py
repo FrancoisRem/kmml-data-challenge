@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import sparse
 
 
 def binary_regression_labels(y):
@@ -12,10 +13,12 @@ def linear_kernel_gram_matrix(X, Y):
     Compute the (Kernel) Gram matrix between X and Y: K_{i,j} = K(X_i, Y_j)
     using the linear kernel K(x, y) = <x, y>.
     This function does not assert the dimensions of X and Y!
-    :param X: np.array with shape nX, d
-    :param Y: np.array with shape nY, d
+    :param X: np.array, or scipy.sparse matrix, with shape nX, d
+    :param Y: np.array, or scipy.sparse matrix, with shape nY, d
     :return: np.array with shape nX, nY
     """
+    if sparse.issparse(X):
+        return (X @ Y.T).toarray()
     return X @ Y.T
 
 
@@ -24,16 +27,22 @@ def gaussian_kernel_gram_matrix(X, Y, gamma):
     Compute the (Kernel) Gram matrix between X and Y: K_{i,j} = K(X_i, Y_j)
     using the linear kernel K(x, y) = exp(-gamma * ||x - y||^2).
     This function does not assert the dimensions of X and Y!
-    :param X: np.array with shape nX, d
-    :param Y: np.array with shape nY, d
+    :param X: np.array, or scipy.sparse matrix, with shape nX, d
+    :param Y: np.array, or scipy.sparse matrix, with shape nY, d
     :param gamma: float, gamma coefficient in the exponential
     :return: np.array with shape nX, nY
     """
     if gamma == 'auto':
         gamma = 1 / X.shape[1]
-    sqnorm_X = np.linalg.norm(X, axis=1) ** 2
-    sqnorm_Y = np.linalg.norm(Y, axis=1) ** 2
-    distances = sqnorm_X[..., np.newaxis] + sqnorm_Y - 2 * np.dot(X, Y.T)
+    if sparse.issparse(X):
+        sqnorm_X = sparse.linalg.norm(X, axis=1) ** 2
+        sqnorm_Y = sparse.linalg.norm(Y, axis=1) ** 2
+        distances = sqnorm_X[..., np.newaxis] + sqnorm_Y - 2 * (
+                X @ Y.T).toarray()
+    else:
+        sqnorm_X = np.linalg.norm(X, axis=1) ** 2
+        sqnorm_Y = np.linalg.norm(Y, axis=1) ** 2
+        distances = sqnorm_X[..., np.newaxis] + sqnorm_Y - 2 * X @ Y.T
     return np.exp(-gamma * distances)
 
 

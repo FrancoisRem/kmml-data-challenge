@@ -83,7 +83,7 @@ class KernelModel:
             t1 = time.time()
             print(f"Gram matrix computation time: {t1 - t0:.2f}s")
 
-        return res.toarray() if issparse(res) else res
+        return res
 
 
 """BEGIN: methods derived from the scikit-learn library and used for 

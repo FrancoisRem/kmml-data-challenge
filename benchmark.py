@@ -83,7 +83,7 @@ number_misplacements = 1
 test_size = 0.25
 scaling_features = False
 
-use_sparse_matrix = False
+use_sparse_matrix = True
 exhaustive_spectrum = True
 do_cross_val_grid_search = False
 cross_val_kfold_k = 5
@@ -141,6 +141,7 @@ for k in range(3):
                                                                 number_misplacements,
                                                                 test_size=test_size,
                                                                 test_idx=None,
+                                                                scaling_features=scaling_features,
                                                                 exhaustive_spectrum=exhaustive_spectrum,
                                                                 use_sparse_matrix=use_sparse_matrix)
 
