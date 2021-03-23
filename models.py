@@ -264,9 +264,10 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
     Binary SVM classifier model using kernel methods.
     """
 
-    def __init__(self, alpha=1, kernel=LINEAR_KERNEL, gamma='auto',
+    def __init__(self, alpha=1, C=None, kernel=LINEAR_KERNEL, gamma='auto',
                  intercept=True):
         self.alpha_ = alpha
+        self.C_ = C  # If C, provided alpha is ignored and the model is C-SVM.
         self.do_intercept_ = intercept
         self.dual_coef_ = None
         self.X_fit_ = None
@@ -311,7 +312,7 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
         else:
             n, _ = X.shape
 
-        C = 1 / (2 * self.alpha_ * n)
+        C = 1 / (2 * self.alpha_ * n) if self.C_ is None else self.C_
         coef = cp.Variable(n)
         problem = cp.Problem(
             cp.Maximize(2 * y.T @ coef - cp.quad_form(coef, K)),
@@ -350,7 +351,7 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
         K = self._gram_matrix(X, X)
         n, _ = X.shape
 
-        C = 1 / (2 * self.alpha_ * n)
+        C = 1 / (2 * self.alpha_ * n) if self.C_ is None else self.C_
         coef = cp.Variable(n)
         problem = cp.Problem(
             cp.Maximize(2 * y.T @ coef - cp.quad_form(coef, K)),

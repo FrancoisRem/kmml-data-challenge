@@ -90,12 +90,12 @@ cross_val_kfold_k = 5
 
 # If not empty, --> use sum kernel: provide list of kernel as kernel with the
 # same size as SUM_KERNEL_PARAMS.
-SUM_KERNEL_SPECTRUM_PARAMS = [(7, 1), (8, 1)]
-SUM_KERNEL_KERNELS = [LINEAR_KERNEL, GAUSSIAN_KERNEL]
+SUM_KERNEL_SPECTRUM_PARAMS = [(7, 1), (9, 1)]
+SUM_KERNEL_KERNELS = [GAUSSIAN_KERNEL, GAUSSIAN_KERNEL]
 
 # Models to benchmark Train/Test evaluation.
 MODELS = [
-    KernelSVMClassifier(kernel=SUM_KERNEL_KERNELS, alpha=1e-4),
+    KernelSVMClassifier(kernel=SUM_KERNEL_KERNELS, C=10),
 ]
 
 # Model and parameters to benchmark using cross-validation grid-search.
