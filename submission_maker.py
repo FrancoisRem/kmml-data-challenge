@@ -153,12 +153,12 @@ exhaustive_spectrum = True
 
 # If not empty, --> use sum kernel: provide list of kernel as kernel with the
 # same size as SUM_KERNEL_PARAMS.
-SUM_KERNEL_SPECTRUM_PARAMS = [(7, 1), (8, 2), (10, 3)]
-SUM_KERNEL_KERNELS = [GAUSSIAN_KERNEL, GAUSSIAN_KERNEL, GAUSSIAN_KERNEL]
+SUM_KERNEL_SPECTRUM_PARAMS = [(7, 1), (10, 2)]
+SUM_KERNEL_KERNELS = [GAUSSIAN_KERNEL, GAUSSIAN_KERNEL]
 
 # Models to benchmark Train/Test evaluation.
 MODELS = [
-    KernelSVMClassifier(kernel=SUM_KERNEL_KERNELS, alpha=1e-4),
+    KernelSVMClassifier(kernel=SUM_KERNEL_KERNELS, alpha=5*1e-5),
 ]
 
 
@@ -195,6 +195,8 @@ for k in range(3):
                                                                                  scaling_features=scaling_features,
                                                                                  exhaustive_spectrum=exhaustive_spectrum,
                                                                                  use_sparse_matrix=use_sparse_matrix)
+                
+                
                 X_train_list.append(X_train)
                 X_test_list.append(X_test)
     
@@ -237,7 +239,7 @@ for k in range(3):
 
 #%% Create submission in right format
 
-submission_name = "combination_8kmer_2mis_3_SVM_rbf.csv"
+submission_name = "sum_10_2_7_1_rbf_SVM.csv"
 
 id_test = [i for i in range(3000)]
 prediction_test = list(test_prediction[0]) + list(test_prediction[1]) + list(test_prediction[2])
