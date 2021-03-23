@@ -75,6 +75,15 @@ class KernelModel:
             print(f"Gram matrix computation time: {t1 - t0:.2f}s")
         return res.toarray() if issparse(res) else res
 
+        if self.kernel_ == SUM_KERNEL:
+            assert type(X) == list
+            assert type(Y) == list
+            nb_kernels = len(X)
+            res = 0
+            for i in range(nb_kernels):
+                res += linear_kernel_gram_matrix(X[i], Y[i])
+            return res
+
         nX, dX = X.shape
         nY, dY = Y.shape
         assert dX == dY
