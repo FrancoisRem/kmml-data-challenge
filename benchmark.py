@@ -37,13 +37,13 @@ def random_splitting(full_matrix_features, full_label_vector, test_size=0.20):
 
 
 # %% SELECT FEATURES
-kmer_size = 6
+kmer_size = 9
 number_misplacements = 1
 test_size = 0.25
 scaling_features = False
 
-use_sparse_kmer_process = True
-do_cross_val_grid_search = True
+use_sparse_kmer_process = False
+do_cross_val_grid_search = False
 cross_val_kfold_k = 5
 
 # Models to benchmark Train/Test evaluation.
@@ -69,15 +69,33 @@ for k in range(3):
                                                     number_misplacements)
 
         spectrums_matrix = compute_spectrums_matrix(spectrums,
-                                                    processor.kmers_support)
+                                                    processor.kmers_support,
+                                                    sparse=False)
     else:
         processor = DenseKMerProcessor(df['seq'])
         spectrums = processor.compute_kmer_mismatch(kmer_size,
                                                     number_misplacements)
+        spectrums_matrix = compute_spectrums_matrix(spectrums,
+                                                    sparse=True)
 
-        spectrums_matrix = compute_spectrums_matrix(spectrums)
+    if issparse(spectrums_matrix):
+        size_bytes = spectrums_matrix.data.nbytes \
+                     + spectrums_matrix.indptr.nbytes \
+                     + spectrums_matrix.indices.nbytes
+    else:
+        size_bytes = spectrums_matrix.nbytes
+    print(
+        f"Spectrums_matrix shape: {spectrums_matrix.shape}, size: {size_bytes / 2 ** 30:.2f}Gb")
 
-    print(f"Shape of the spectrums_matrix: {spectrums_matrix.shape}")
+    # a = spectrums_matrix
+    # if type(a) == np.array:
+    #     pass
+    # else:
+    # print(
+    #     f"size {(a.data.nbytes + a.indptr.nbytes + a.indices.nbytes) / 10 ** 9}")
+    # exit()
+
+    # np.save(FEATURE_FILE_PREFIX + train_name_features, spectrums_matrix)
 
     X_train, X_test, y_train, y_test = random_splitting(spectrums_matrix,
                                                         df[

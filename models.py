@@ -7,9 +7,11 @@ library (https://scikit-learn.org/stable/).
 """
 
 import inspect
+import time
 
 import cvxpy as cp
 from scipy import linalg
+from scipy.sparse import issparse
 from scipy.special import expit
 
 from utils import *
@@ -39,7 +41,7 @@ class KernelModel:
         self.kernel_ = kernel
         self.gamma_ = gamma
 
-    def _gram_matrix(self, X, Y):
+    def _gram_matrix(self, X, Y, time_it=True):
         """
         Compute the (Kernel) Gram matrix between X and Y: K_{i,j} = K(X_i, Y_j)
         using kernel_.
@@ -47,11 +49,19 @@ class KernelModel:
         :param Y: np.array with shape nY, d
         :return: np.array with shape nX, nY
         """
+        if time_it:
+            t0 = time.time()
+
         if self.kernel_ == LINEAR_KERNEL:
-            return linear_kernel_gram_matrix(X, Y)
+            res = linear_kernel_gram_matrix(X, Y)
 
         if self.kernel_ == GAUSSIAN_KERNEL:
-            return gaussian_kernel_gram_matrix(X, Y, self.gamma_)
+            res = gaussian_kernel_gram_matrix(X, Y, self.gamma_)
+
+        if time_it:
+            t1 = time.time()
+            print(f"Gram matrix computation time: {t1 - t0:.2f}s")
+        return res.toarray() if issparse(res) else res
 
         nX, dX = X.shape
         nY, dY = Y.shape
@@ -62,51 +72,55 @@ class KernelModel:
                 K[i, j] = self.kernel_(X[i], Y[j])
         return K
 
-    """BEGIN: methods derived from the scikit-learn library and used for 
-    compatibility with the model_selection module. The implementation is lighter
-    so that it only meets our requirements."""
 
-    def get_params(self, deep=True):
-        """
-        Get parameters for this model.
-        :param deep: bool, unused but necessary for compatibility with sk-learn
-        :return: dict, parameter names mapped to their values
-        """
-        init_signature = inspect.signature(self.__init__)
-        out = dict()
-        parameters = [p.name for p in init_signature.parameters.values()
-                      if p.name != 'self'
-                      and p.kind != p.VAR_KEYWORD
-                      and p.kind != p.VAR_POSITIONAL]
-        for key in parameters:
-            # our internal attributes use "single_trailing_underscore_"
-            value = getattr(self, key + '_')
-            out[key] = value
-        return out
+"""BEGIN: methods derived from the scikit-learn library and used for 
+compatibility with the model_selection module. The implementation is lighter
+so that it only meets our requirements."""
 
-    def set_params(self, **params):
-        """
-        Set the parameters of this model.
-        :param params: dict, model parameters
-        :return: model instance with the given parameters
-        """
-        if not params:
-            # Simple optimization to gain speed (inspect is slow)
-            return self
 
-        valid_params = self.get_params(deep=True)
-        for key, value in params.items():
-            if key not in valid_params:
-                raise ValueError('Invalid parameter %s for model %s. '
-                                 'Check the list of available parameters '
-                                 'with `model.get_params().keys()`.' %
-                                 (key, self))
-            # our internal attributes use "single_trailing_underscore_"
-            setattr(self, key + '_', value)
+def get_params(self, deep=True):
+    """
+    Get parameters for this model.
+    :param deep: bool, unused but necessary for compatibility with sk-learn
+    :return: dict, parameter names mapped to their values
+    """
+    init_signature = inspect.signature(self.__init__)
+    out = dict()
+    parameters = [p.name for p in init_signature.parameters.values()
+                  if p.name != 'self'
+                  and p.kind != p.VAR_KEYWORD
+                  and p.kind != p.VAR_POSITIONAL]
+    for key in parameters:
+        # our internal attributes use "single_trailing_underscore_"
+        value = getattr(self, key + '_')
+        out[key] = value
+    return out
+
+
+def set_params(self, **params):
+    """
+    Set the parameters of this model.
+    :param params: dict, model parameters
+    :return: model instance with the given parameters
+    """
+    if not params:
+        # Simple optimization to gain speed (inspect is slow)
         return self
 
-    """END: see original and more general implementation at: 
-    github.com/scikit-learn/scikit-learn/blob/main/sklearn/base.py"""
+    valid_params = self.get_params(deep=True)
+    for key, value in params.items():
+        if key not in valid_params:
+            raise ValueError('Invalid parameter %s for model %s. '
+                             'Check the list of available parameters '
+                             'with `model.get_params().keys()`.' %
+                             (key, self))
+        # our internal attributes use "single_trailing_underscore_"
+        setattr(self, key + '_', value)
+    return self
+
+
+"""END: see original and more general implementation at: 
+github.com/scikit-learn/scikit-learn/blob/main/sklearn/base.py"""
 
 
 class LinearKernelBinaryClassifier(KernelModel):
@@ -128,7 +142,7 @@ class LinearKernelBinaryClassifier(KernelModel):
 
     def decision_function(self, X):
         self.assert_is_fitted()
-        K = self._gram_matrix(X, self.X_fit_)
+        K = self._gram_matrix(X, self.X_fit_, time_it=False)
         return np.dot(K, self.dual_coef_) + self.intercept_
 
     def predict(self, X):

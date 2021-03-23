@@ -2,6 +2,7 @@ from collections import defaultdict
 from functools import partial
 
 import numpy as np
+from scipy.sparse import csr_matrix
 from tqdm import tqdm
 
 DNA_NUCLEOTIDES = {'A', 'T', 'G', 'C'}
@@ -135,7 +136,7 @@ def index_kmers(kmers_support):
     return kmer_to_index
 
 
-def compute_spectrums_matrix(spectrums, kmers_support=None):
+def compute_spectrums_matrix(spectrums, kmers_support=None, sparse=True):
     """
     Compute the matrix of the spectrums (dict kmer -> frequencies) as a dense
     numpy array.
@@ -160,4 +161,7 @@ def compute_spectrums_matrix(spectrums, kmers_support=None):
     for i, spectrum in enumerate(tqdm(spectrums)):
         for kmer, freq in spectrum.items():
             spectrums_matrix[i, kmer_to_index[kmer]] = freq
-    return spectrums_matrix
+
+    print(
+        f"Spectrums matrix density: {np.count_nonzero(spectrums_matrix) / spectrums_matrix.size * 100:.2f}%")
+    return csr_matrix(spectrums_matrix) if sparse else spectrums_matrix
