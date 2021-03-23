@@ -188,7 +188,7 @@ class KernelRidgeClassifier(LinearKernelBinaryClassifier):
     def fit(self, X, y, sample_weight=None):
         y = binary_regression_labels(y)
         K = self._gram_matrix(X, X)
-        n, _ = X.shape
+        n, _ = X[0].shape if type(self.kernel_) == list else X.shape
         if sample_weight is None:
             self.dual_coef_ = linalg.solve(
                 a=K + n * self.alpha_ * np.eye(n),
@@ -227,7 +227,7 @@ class KernelLogisticClassifier(LinearKernelBinaryClassifier):
         """
         y = binary_regression_labels(y)
         K = self._gram_matrix(X, X)
-        n, _ = X.shape
+        n, _ = X[0].shape if type(self.kernel_) == list else X.shape
 
         coef = np.zeros(n)
         for it in range(max_iter):
@@ -307,10 +307,7 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
         """
         y = binary_regression_labels(y)
         K = self._gram_matrix(X, X)
-        if type(self.kernel_) == list:
-            n, _ = X[0].shape
-        else:
-            n, _ = X.shape
+        n, _ = X[0].shape if type(self.kernel_) == list else X.shape
 
         C = 1 / (2 * self.alpha_ * n) if self.C_ is None else self.C_
         coef = cp.Variable(n)
@@ -349,7 +346,7 @@ class KernelSVMClassifier(LinearKernelBinaryClassifier):
         """
         y = binary_regression_labels(y)
         K = self._gram_matrix(X, X)
-        n, _ = X.shape
+        n, _ = X[0].shape if type(self.kernel_) == list else X.shape
 
         C = 1 / (2 * self.alpha_ * n) if self.C_ is None else self.C_
         coef = cp.Variable(n)
