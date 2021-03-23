@@ -6,12 +6,9 @@ Created on Sun Feb 28 13:58:29 2021
 
 #%% Imports
 
-import pandas as pd
-import numpy as np
 import os
-import time
 
-from feature_extractor import *
+from experiments.feature_extractor import *
 from models import *
 from kmer_processor import *
 

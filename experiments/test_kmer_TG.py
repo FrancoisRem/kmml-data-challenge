@@ -1,11 +1,11 @@
-from feature_extractor import *
+from experiments.feature_extractor import *
 from kmer_processor import *
 from models import *
 
 #%% Load data
 
-DATA_FILE_PREFIX= "data/"
-FEATURE_FILE_PREFIX= "features/"
+DATA_FILE_PREFIX= "../data/"
+FEATURE_FILE_PREFIX= "../features/"
 TRAINING_FILE_PREFIX="Xtr"
 LABEL_FILE_PREFIX="Ytr"
 TEST_FILE_PREFIX="Xte"

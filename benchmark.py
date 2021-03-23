@@ -1,15 +1,11 @@
-import os
 import random
 from copy import deepcopy
 
+import pandas as pd
 from sklearn.model_selection import GridSearchCV
 
-from feature_extractor import *
 from kmer_processor import *
 from models import *
-
-# Global initialization
-SEED = 2021
 
 # Path prefix constants
 DATA_FILE_PREFIX = "data/"
@@ -23,70 +19,6 @@ def read_train_dataset(k):
         DATA_FILE_PREFIX + TRAINING_FILE_PREFIX + str(k) + ".csv")
     Ytr_df = pd.read_csv(DATA_FILE_PREFIX + LABEL_FILE_PREFIX + str(k) + ".csv")
     return pd.merge(left=Xtr_df, right=Ytr_df, on='Id')
-
-
-def compute_features(df,
-                     use_mat_features=False,
-                     use_kmers=True,
-                     kmer_min_size=4, kmer_max_size=5, with_misplacement=True,
-                     number_misplacements=1,
-                     dict_original_pattern_to_misplaced=None):
-    list_features = []
-    # Features created by professors
-    if use_mat_features:
-        Xtr_mat100_df = pd.read_csv(
-            DATA_FILE_PREFIX + TRAINING_FILE_PREFIX + str(k) + "_mat100.csv",
-            sep=' ', header=None)
-        df[['feature_given_' + str(j) for j in range(1, 101)]] = Xtr_mat100_df
-        list_features += ['feature_given_' + str(j) for j in range(1, 101)]
-
-    # Features of kmers frequency
-    if use_kmers:
-        list_kmer_pattern, df, dict_original_pattern_to_misplaced = add_kmer_features(
-            kmer_min_size, kmer_max_size,
-            with_misplacement,
-            number_misplacements, df, dict_original_pattern_to_misplaced)
-        list_features += list_kmer_pattern
-
-    return df, list_features, dict_original_pattern_to_misplaced
-
-
-def split_train_test(df, list_features, test_size=0.20):
-    # Split train test
-    df_test = df.sample(frac=test_size, random_state=SEED)
-    df_train = df.drop(df_test.index)
-
-    # Create train and test label vectors
-    y_train = df_train['Bound'].to_numpy()
-    y_test = df_test['Bound'].to_numpy()
-
-    # Create train and test feature vectors
-    X_train = df_train[list_features].to_numpy()
-    X_test = df_test[list_features].to_numpy()
-
-    return X_train, X_test, y_train, y_test
-
-
-def load_data(train_name_features, test_size=0.20):
-    ### Load full feature matrix
-    total_feature_array = np.load(FEATURE_FILE_PREFIX + train_name_features)
-
-    ### Load full label matrix
-    Ytr_df = pd.read_csv(DATA_FILE_PREFIX + LABEL_FILE_PREFIX + str(k) + ".csv")
-    total_label_array = Ytr_df['Bound'].to_numpy()
-
-    ### Split Train and Validation
-    test_idx = random.sample(range(0, 2000),
-                             int(total_label_array.shape[0] * test_size))
-    train_idx = [i for i in range(0, 2000) if not (i in test_idx)]
-
-    X_train = total_feature_array[train_idx, :]
-    y_train = total_label_array[train_idx]
-
-    X_test = total_feature_array[test_idx, :]
-    y_test = total_label_array[test_idx]
-
-    return X_train, X_test, y_train, y_test
 
 
 def random_splitting(full_matrix_features, full_label_vector, test_size=0.20):
@@ -105,17 +37,11 @@ def random_splitting(full_matrix_features, full_label_vector, test_size=0.20):
 
 
 # %% SELECT FEATURES
-
-use_mat_features = False
-use_kmers = True
-kmer_min_size = 8
-kmer_max_size = 8
-with_misplacement = True
-number_misplacements = 2
+kmer_size = 6
+number_misplacements = 1
 test_size = 0.25
 scaling_features = False
 
-use_fast_kmer_process = True
 use_sparse_kmer_process = True
 do_cross_val_grid_search = True
 cross_val_kfold_k = 5
@@ -128,77 +54,38 @@ MODELS = [
 # Model and parameters to benchmark using cross-validation grid-search.
 CV_MODEL = KernelSVMClassifier()
 CV_TUNED_PARAMS = [
-    {'kernel': [GAUSSIAN_KERNEL], 'alpha': [5*1e-5, 1e-5, 5*1e-6, 1e-6]}]
+    {'kernel': [GAUSSIAN_KERNEL], 'alpha': [5 * 1e-5, 1e-5, 5 * 1e-6, 1e-6]}]
 
 # %% RUN FULL PIPELINE
-
-dict_original_pattern_to_misplaced = None
 for k in range(3):
-
     # Reinitialize models at each iteration
     models = deepcopy(MODELS)
     print(f"------PREDICTION FILE {k}------")
+    df = read_train_dataset(k)
 
-    ### Check if features were already computed and saved
-    name_features = "features_" + str(k) + "_kmin_" + str(
-        kmer_min_size) + "_kmax_" + str(kmer_max_size)
-    if with_misplacement:
-        name_features += "_mis_" + str(number_misplacements)
-    if not scaling_features:
-        name_features += '_unscaled'
-    train_name_features = name_features + "_Xtrain.npy"
+    if use_sparse_kmer_process:
+        processor = SparseKMerProcessor(df['seq'])
+        spectrums = processor.compute_kmer_mismatch(kmer_size,
+                                                    number_misplacements)
 
-    if use_fast_kmer_process:
-        # TODO: add options to this branch such as random train/test split
-        # or options to standardize data.
-        # Only single k supported so far for simplicity.
-        assert kmer_min_size == kmer_max_size
-        df = read_train_dataset(k)
-
-        if use_sparse_kmer_process:
-            processor = SparseKMerProcessor(df['seq'])
-            spectrums = processor.compute_kmer_mismatch(kmer_min_size,
-                                                        number_misplacements)
-
-            spectrums_matrix = compute_spectrums_matrix(spectrums,
-                                                        processor.kmers_support)
-        else:
-            processor = DenseKMerProcessor(df['seq'])
-            spectrums = processor.compute_kmer_mismatch(kmer_min_size,
-                                                        number_misplacements)
-
-            spectrums_matrix = compute_spectrums_matrix(spectrums)
-
-        print(f"Shape of the spectrums_matrix: {spectrums_matrix.shape}")
-
-        X_train, X_test, y_train, y_test = random_splitting(spectrums_matrix,
-                                                            df[
-                                                                'Bound'].to_numpy(),
-                                                            test_size)
-
-        if scaling_features:
-            X_train, X_test = standardize_train_test(X_train, X_test)
-
-    elif os.path.isfile(FEATURE_FILE_PREFIX + train_name_features):
-        print("Features already computed and saved : loading...")
-        X_train, X_test, y_train, y_test = load_data(train_name_features,
-                                                     test_size=test_size)
-
-    ### Otherwise compute them
+        spectrums_matrix = compute_spectrums_matrix(spectrums,
+                                                    processor.kmers_support)
     else:
-        print("No previous similar computation : computing...")
-        df = read_train_dataset(k)
+        processor = DenseKMerProcessor(df['seq'])
+        spectrums = processor.compute_kmer_mismatch(kmer_size,
+                                                    number_misplacements)
 
-        df, list_features, dict_original_pattern_to_misplaced = compute_features(
-            df, use_mat_features,
-            use_kmers, kmer_min_size, kmer_max_size, with_misplacement,
-            number_misplacements, dict_original_pattern_to_misplaced)
+        spectrums_matrix = compute_spectrums_matrix(spectrums)
 
-        X_train, X_test, y_train, y_test = split_train_test(df, list_features,
-                                                            test_size)
+    print(f"Shape of the spectrums_matrix: {spectrums_matrix.shape}")
 
-        if scaling_features:
-            X_train, X_test = standardize_train_test(X_train, X_test)
+    X_train, X_test, y_train, y_test = random_splitting(spectrums_matrix,
+                                                        df[
+                                                            'Bound'].to_numpy(),
+                                                        test_size)
+
+    if scaling_features:
+        X_train, X_test = standardize_train_test(X_train, X_test)
 
     # Cross-validation-based grid-search for CV_MODEL over CV_TUNED_PARAMS.
     if do_cross_val_grid_search:
