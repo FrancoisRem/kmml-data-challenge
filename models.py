@@ -61,19 +61,19 @@ class KernelModel:
             assert len(X) == len(Y)
             kernels = self.kernel_
         else:
-            kernels = [self.kernel_]
+            kernels = [(self.kernel_, 1)]
             X, Y = [X], [Y]
 
         res = 0
-        for i, kernel in enumerate(kernels):
+        for i, (kernel, weight) in enumerate(kernels):
             if kernel == LINEAR_KERNEL:
-                res += linear_kernel_gram_matrix(X[i], Y[i])
+                res += weight * linear_kernel_gram_matrix(X[i], Y[i])
 
             elif kernel == GAUSSIAN_KERNEL:
-                res += gaussian_kernel_gram_matrix(X[i], Y[i], self.gamma_)
+                res += weight * gaussian_kernel_gram_matrix(X[i], Y[i], self.gamma_)
 
             elif kernel == COSINE_KERNEL:
-                res += cosine_similarity_kernel_gram_matrix(X[i], Y[i])
+                res += weight * cosine_similarity_kernel_gram_matrix(X[i], Y[i])
 
             else:
                 nX, dX = X[i].shape
@@ -83,7 +83,7 @@ class KernelModel:
                 for k in range(nX):
                     for l in range(nY):
                         K[k, l] = kernel(X[k], Y[l])
-                res += K
+                res += weight * K
 
         if time_it:
             t1 = time.time()

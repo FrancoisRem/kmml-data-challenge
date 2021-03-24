@@ -91,7 +91,7 @@ cross_val_kfold_k = 5
 # If not empty, --> use sum kernel: provide list of kernel as kernel with the
 # same size as SUM_KERNEL_PARAMS.
 SUM_KERNEL_SPECTRUM_PARAMS = [(5, 1), (7, 1)]
-SUM_KERNEL_KERNELS = [COSINE_KERNEL, COSINE_KERNEL]
+SUM_KERNEL_KERNELS = [(COSINE_KERNEL, 0.1), (COSINE_KERNEL, 0.9)]
 
 # Models to benchmark Train/Test evaluation.
 MODELS = [
