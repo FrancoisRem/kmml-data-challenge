@@ -153,12 +153,12 @@ exhaustive_spectrum = True
 
 # If not empty, --> use sum kernel: provide list of kernel as kernel with the
 # same size as SUM_KERNEL_PARAMS.
-SUM_KERNEL_SPECTRUM_PARAMS = [(7, 1), (10, 2)]
-SUM_KERNEL_KERNELS = [GAUSSIAN_KERNEL, GAUSSIAN_KERNEL]
+SUM_KERNEL_SPECTRUM_PARAMS = [(6, 1), (9, 1)]
+SUM_KERNEL_KERNELS = [(LINEAR_KERNEL, 1e-2), (LINEAR_KERNEL, 1)]
 
 # Models to benchmark Train/Test evaluation.
 MODELS = [
-    KernelSVMClassifier(kernel=SUM_KERNEL_KERNELS, alpha=5*1e-5),
+    KernelLogisticClassifier(kernel=SUM_KERNEL_KERNELS, alpha=0.5),
 ]
 
 
@@ -244,7 +244,7 @@ for k in range(3):
 
 #%% Create submission in right format
 
-submission_name = "sum_10_2_7_1_rbf_SVM.csv"
+submission_name = "sum_6_1_9_1_lin_weighted_log.csv"
 
 id_test = [i for i in range(3000)]
 prediction_test = list(test_prediction[0]) + list(test_prediction[1]) + list(test_prediction[2])
