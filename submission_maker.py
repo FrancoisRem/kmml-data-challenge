@@ -227,7 +227,12 @@ for k in range(3):
     kernel_selected.fit(X_train, y_train)
     checkpoint_2 = time.time()
     print("TIME FOR FITTING " + str(k) + " : " + str(int(checkpoint_2 - checkpoint_1)) + " seconds")
-    
+
+    ### Prediction on train set
+    y_train_pred = kernel_selected.predict(X_train)
+    train_accuracy = accuracy_score(y_train_pred, y_train)
+    print(f"\tTrain {train_accuracy * 100:.1f}%")
+
     ### Prediction on test set
     print("PREDICTING")
     test_prediction[k] = kernel_selected.predict(X_test)
