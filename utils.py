@@ -46,6 +46,29 @@ def gaussian_kernel_gram_matrix(X, Y, gamma):
     return np.exp(-gamma * distances)
 
 
+def cosine_similarity_kernel_gram_matrix(X, Y):
+    """
+    Compute the (Kernel) Gram matrix between X and Y: K_{i,j} = K(X_i, Y_j)
+    using the cosine similarity (or normalized linear) kernel
+    K(x, y) = <x, y>/(||x||*||y||).
+    This function expect all the rows of X and Y to be non-identically zero.
+    This function does not assert the dimensions of X and Y!
+    :param X: np.array, or scipy.sparse matrix, with shape nX, d
+    :param Y: np.array, or scipy.sparse matrix, with shape nY, d
+    :return: np.array with shape nX, nY
+    """
+    if np.all(X == Y):
+        linear = linear_kernel_gram_matrix(X, X)
+        inv_sqrt_diag = np.sqrt(1 / linear.diagonal())
+        return inv_sqrt_diag * linear * np.vstack(inv_sqrt_diag)
+
+    # sparse matrices not supported yet.
+    linear = linear_kernel_gram_matrix(X, Y)
+    inv_sqrt_X = 1 / np.linalg.norm(X, axis=1)
+    inv_sqrt_Y = 1 / np.linalg.norm(Y, axis=1)
+    return np.vstack(inv_sqrt_X) * linear * inv_sqrt_Y
+
+
 def accuracy_score(predicted, expected):
     """
     Compute the accuracy score between predicted and expected labels.

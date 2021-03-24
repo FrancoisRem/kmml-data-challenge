@@ -21,6 +21,8 @@ LINEAR_KERNEL = 'lin'
 # Constant for Gaussian (Radial Basis Function) kernel
 # K(x, y) = exp(-gamma * ||x - y||^2)
 GAUSSIAN_KERNEL = 'rbf'
+# Constant for cosine similarity (i.e. normalized linear kernel)
+COSINE_KERNEL = 'cos'
 
 
 class KernelModel:
@@ -37,7 +39,8 @@ class KernelModel:
         :param gamma: float, coefficient for Gaussian kernel. Or 'auto' which
         gives gamma=1/(nb_features).
         """
-        assert kernel in [LINEAR_KERNEL, GAUSSIAN_KERNEL] or callable(
+        assert kernel in [LINEAR_KERNEL, GAUSSIAN_KERNEL,
+                          COSINE_KERNEL] or callable(
             kernel) or type(kernel) == list
         self.kernel_ = kernel
         self.gamma_ = gamma
@@ -68,6 +71,9 @@ class KernelModel:
 
             elif kernel == GAUSSIAN_KERNEL:
                 res += gaussian_kernel_gram_matrix(X[i], Y[i], self.gamma_)
+
+            elif kernel == COSINE_KERNEL:
+                res += cosine_similarity_kernel_gram_matrix(X[i], Y[i])
 
             else:
                 nX, dX = X[i].shape

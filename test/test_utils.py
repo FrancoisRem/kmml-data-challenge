@@ -4,7 +4,7 @@ import numpy as np
 from numpy import testing
 
 from utils import accuracy_score, binary_regression_labels, \
-    gaussian_kernel_gram_matrix, \
+    cosine_similarity_kernel_gram_matrix, gaussian_kernel_gram_matrix, \
     linear_kernel_gram_matrix, standardize_train_test
 
 
@@ -74,6 +74,25 @@ class Test(TestCase):
         # expected = [[exp(-2), exp(-2)]]
         expected = np.array([[0.13533528323, 0.13533528323]])
         testing.assert_almost_equal(gaussian_kernel_gram_matrix(X, Y, gamma=1),
+                                    expected)
+
+    def test_cosine_similarity_kernel_gram_matrix(self):
+        X = np.vstack([2])
+        Y = np.vstack([3])
+        testing.assert_almost_equal(cosine_similarity_kernel_gram_matrix(X, X),
+                                    1)
+        testing.assert_almost_equal(cosine_similarity_kernel_gram_matrix(X, Y),
+                                    1)
+
+        X = np.array([[1, 2], [6, 6]])
+        Y = np.array([[0, 1], [2, 1]])
+        expected = np.array([[1., 0.9486833],
+                             [0.9486833, 1.]])
+        testing.assert_almost_equal(cosine_similarity_kernel_gram_matrix(X, X),
+                                    expected)
+        expected = np.array([[0.89442719, 0.8],
+                             [0.70710678, 0.9486833]])
+        testing.assert_almost_equal(cosine_similarity_kernel_gram_matrix(X, Y),
                                     expected)
 
     def test_accuracy_score(self):

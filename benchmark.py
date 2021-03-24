@@ -83,15 +83,15 @@ number_misplacements = 1
 test_size = 0.25
 scaling_features = False
 
-use_sparse_matrix = True
+use_sparse_matrix = False
 exhaustive_spectrum = True
 do_cross_val_grid_search = False
 cross_val_kfold_k = 5
 
 # If not empty, --> use sum kernel: provide list of kernel as kernel with the
 # same size as SUM_KERNEL_PARAMS.
-SUM_KERNEL_SPECTRUM_PARAMS = [(7, 1), (9, 1)]
-SUM_KERNEL_KERNELS = [GAUSSIAN_KERNEL, GAUSSIAN_KERNEL]
+SUM_KERNEL_SPECTRUM_PARAMS = [(5, 1), (7, 1)]
+SUM_KERNEL_KERNELS = [COSINE_KERNEL, COSINE_KERNEL]
 
 # Models to benchmark Train/Test evaluation.
 MODELS = [
