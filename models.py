@@ -11,7 +11,6 @@ import time
 
 import cvxpy as cp
 from scipy import linalg
-from scipy.sparse import issparse
 from scipy.special import expit
 
 from utils import *
@@ -70,7 +69,8 @@ class KernelModel:
                 res += weight * linear_kernel_gram_matrix(X[i], Y[i])
 
             elif kernel == GAUSSIAN_KERNEL:
-                res += weight * gaussian_kernel_gram_matrix(X[i], Y[i], self.gamma_)
+                res += weight * gaussian_kernel_gram_matrix(X[i], Y[i],
+                                                            self.gamma_)
 
             elif kernel == COSINE_KERNEL:
                 res += weight * cosine_similarity_kernel_gram_matrix(X[i], Y[i])

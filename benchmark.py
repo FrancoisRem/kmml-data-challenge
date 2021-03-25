@@ -2,6 +2,7 @@ import random
 from copy import deepcopy
 
 import pandas as pd
+from scipy.sparse import issparse
 from sklearn.model_selection import GridSearchCV
 
 from kmer_processor import *
