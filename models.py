@@ -92,54 +92,54 @@ class KernelModel:
         return res
 
 
-"""BEGIN: methods derived from the scikit-learn library and used for 
-compatibility with the model_selection module. The implementation is lighter
-so that it only meets our requirements."""
-
-
-def get_params(self, deep=True):
-    """
-    Get parameters for this model.
-    :param deep: bool, unused but necessary for compatibility with sk-learn
-    :return: dict, parameter names mapped to their values
-    """
-    init_signature = inspect.signature(self.__init__)
-    out = dict()
-    parameters = [p.name for p in init_signature.parameters.values()
-                  if p.name != 'self'
-                  and p.kind != p.VAR_KEYWORD
-                  and p.kind != p.VAR_POSITIONAL]
-    for key in parameters:
-        # our internal attributes use "single_trailing_underscore_"
-        value = getattr(self, key + '_')
-        out[key] = value
-    return out
-
-
-def set_params(self, **params):
-    """
-    Set the parameters of this model.
-    :param params: dict, model parameters
-    :return: model instance with the given parameters
-    """
-    if not params:
-        # Simple optimization to gain speed (inspect is slow)
+    """BEGIN: methods derived from the scikit-learn library and used for 
+    compatibility with the model_selection module. The implementation is lighter
+    so that it only meets our requirements."""
+    
+    
+    def get_params(self, deep=True):
+        """
+        Get parameters for this model.
+        :param deep: bool, unused but necessary for compatibility with sk-learn
+        :return: dict, parameter names mapped to their values
+        """
+        init_signature = inspect.signature(self.__init__)
+        out = dict()
+        parameters = [p.name for p in init_signature.parameters.values()
+                      if p.name != 'self'
+                      and p.kind != p.VAR_KEYWORD
+                      and p.kind != p.VAR_POSITIONAL]
+        for key in parameters:
+            # our internal attributes use "single_trailing_underscore_"
+            value = getattr(self, key + '_')
+            out[key] = value
+        return out
+    
+    
+    def set_params(self, **params):
+        """
+        Set the parameters of this model.
+        :param params: dict, model parameters
+        :return: model instance with the given parameters
+        """
+        if not params:
+            # Simple optimization to gain speed (inspect is slow)
+            return self
+    
+        valid_params = self.get_params(deep=True)
+        for key, value in params.items():
+            if key not in valid_params:
+                raise ValueError('Invalid parameter %s for model %s. '
+                                 'Check the list of available parameters '
+                                 'with `model.get_params().keys()`.' %
+                                 (key, self))
+            # our internal attributes use "single_trailing_underscore_"
+            setattr(self, key + '_', value)
         return self
-
-    valid_params = self.get_params(deep=True)
-    for key, value in params.items():
-        if key not in valid_params:
-            raise ValueError('Invalid parameter %s for model %s. '
-                             'Check the list of available parameters '
-                             'with `model.get_params().keys()`.' %
-                             (key, self))
-        # our internal attributes use "single_trailing_underscore_"
-        setattr(self, key + '_', value)
-    return self
-
-
-"""END: see original and more general implementation at: 
-github.com/scikit-learn/scikit-learn/blob/main/sklearn/base.py"""
+    
+    
+    """END: see original and more general implementation at: 
+    github.com/scikit-learn/scikit-learn/blob/main/sklearn/base.py"""
 
 
 class LinearKernelBinaryClassifier(KernelModel):
