@@ -85,8 +85,7 @@ def read_dataset_train_test_fast_kmer_process(k, kmer_size=3,
 # %% SELECTING PARAMETERS
 
 # Parameters in case a signe kernel is used
-kmer_min_size = 8
-kmer_max_size = 8
+kmer_size = 8
 number_misplacements = 2
 
 # Scale the feature embeddings before entering the kernel or not
@@ -148,9 +147,8 @@ for k in range(3):
         X_test = X_test_list
 
     else:
-        assert kmer_min_size == kmer_max_size
         X_train, y_train, X_test = read_dataset_train_test_fast_kmer_process(k,
-                                                                             kmer_min_size,
+                                                                             kmer_size,
                                                                              number_misplacements,
                                                                              scaling_features,
                                                                              use_sparse_kmer_process)
