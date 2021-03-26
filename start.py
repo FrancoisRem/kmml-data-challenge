@@ -89,6 +89,7 @@ kmer_size = 8
 number_misplacements = 2
 
 # Scale the feature embeddings before entering the kernel or not
+# Note: sparse matrices are not supported by this option
 scaling_features = False
 
 # Use Scipy Sparse matrix to optimize storage or not
@@ -101,7 +102,6 @@ exhaustive_spectrum = True
 
 # If not empty, --> use sum kernel: provide list of kernel as kernel with the
 # same size as SUM_KERNEL_PARAMS.
-
 # (kmer size, number of misplacements)
 SUM_KERNEL_SPECTRUM_PARAMS = [(6, 1), (9, 1)]
 SUM_KERNEL_KERNELS = [(LINEAR_KERNEL, 1e-2), (LINEAR_KERNEL, 1)]
