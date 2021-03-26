@@ -13,6 +13,7 @@ from scipy.sparse import issparse
 
 from kmer_processor import *
 from models import *
+from utils import *
 
 # %% Load data
 
