@@ -13,7 +13,8 @@ import cvxpy as cp
 from scipy import linalg
 from scipy.special import expit
 
-from utils import *
+from utils import binary_regression_labels
+from kernels import *
 
 # Constant for linear kernel K(x, y) = <x, y>
 LINEAR_KERNEL = 'lin'

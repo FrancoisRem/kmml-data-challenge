@@ -2,13 +2,15 @@ import random
 from copy import deepcopy
 
 import pandas as pd
+from scipy.sparse import issparse
 from sklearn.model_selection import GridSearchCV
 
 from kmer_processor import *
 from models import *
+from utils import *
 
 # Path prefix constants
-DATA_FILE_PREFIX = "data/"
+DATA_FILE_PREFIX = "../data/"
 TRAINING_FILE_PREFIX = "Xtr"
 LABEL_FILE_PREFIX = "Ytr"
 FEATURE_FILE_PREFIX = "features/"
@@ -232,8 +234,6 @@ for exp in range(number_experiments):
 #%% 
 import matplotlib.pyplot as plt
 
-experiment_folder = "experiments"
-
 train_accuracy_median = [np.median([train_dict[exp][alpha] for exp in range(number_experiments)]) for alpha in list_alpha]
 train_accuracy_std = [np.std([train_dict[exp][alpha] for exp in range(number_experiments)]) for alpha in list_alpha]
 test_accuracy_median = [np.median([test_dict[exp][alpha] for exp in range(number_experiments)]) for alpha in list_alpha]
@@ -258,7 +258,7 @@ ax2.set_ylim(bottom=0.45,top = 0.70)
 plt.yticks([0.45,0.50,0.55,0.60,0.65, 0.70],fontsize=13)
 #ax2.plot(list_alpha, test_accuracy_median, color='r',alpha=0.8)
 ax2.errorbar(list_alpha, test_accuracy_median, yerr=test_accuracy_std, color='r',ecolor='r', capsize=3)
-plt.savefig(experiment_folder+'/'+"behaviour_plot_v3.png", dpi=400, bbox_inches='tight')
+plt.savefig("behaviour_plot_v3.png", dpi=400, bbox_inches='tight')
 
 plt.show()
 

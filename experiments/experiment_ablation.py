@@ -2,19 +2,18 @@ import random
 from copy import deepcopy
 
 import pandas as pd
+from scipy.sparse import issparse
 from sklearn.model_selection import GridSearchCV
 
 from kmer_processor import *
 from models import *
+from utils import *
 
 # Path prefix constants
-DATA_FILE_PREFIX = "data/"
+DATA_FILE_PREFIX = "../data/"
 TRAINING_FILE_PREFIX = "Xtr"
 LABEL_FILE_PREFIX = "Ytr"
 FEATURE_FILE_PREFIX = "features/"
-
-from scipy.sparse import issparse
-
 
 def read_train_dataset(k):
     Xtr_df = pd.read_csv(
