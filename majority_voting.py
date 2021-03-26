@@ -38,13 +38,13 @@ def submissions_go_to_the_ballots(list_submissions_name, majority_submission_nam
     
 #%% Run the majority voting
 
-list_submissions_name = ["657_submission_6kmer_2mis_rbf_svm.csv",
-                         "658_submission_7kmer_2mis_rbf_svm.csv",
-                         "651_submission_5kmer_1mis_rbf_svm.csv",
-                         "647_submission_100mat_kmer_4_6_misplacement1_SVM.csv"
-                         ]
+list_submissions_name = ["670_combination_7kmer_1mis_3_SVM_rbf.csv",
+                         "668_submission_7kmer_2mis_rbf_svm_tailored.csv",
+                         "663_sum_10_2_7_1_rbf_SVM.csv",
+                         "669_6_1_9_1_lin_Log.csv",
+                         "679_sum_6_1_9_1_lin_weighted_log.csv"]
 
-majority_submission_name = "piche.csv"
+majority_submission_name = "majority_voting_top_5.csv"
 
 submissions_go_to_the_ballots(list_submissions_name, majority_submission_name)    
 

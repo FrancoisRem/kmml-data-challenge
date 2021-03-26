@@ -13,6 +13,8 @@ TRAINING_FILE_PREFIX = "Xtr"
 LABEL_FILE_PREFIX = "Ytr"
 FEATURE_FILE_PREFIX = "features/"
 
+from scipy.sparse import issparse
+
 
 def read_train_dataset(k):
     Xtr_df = pd.read_csv(
@@ -78,7 +80,7 @@ def process_kmer_dataset(df, kmer_size, number_misplacements, test_size=0.20,
 
 
 # %% SELECT FEATURES
-kmer_size = 9
+kmer_size = 7
 number_misplacements = 1
 test_size = 0.25
 scaling_features = False
@@ -90,15 +92,15 @@ cross_val_kfold_k = 5
 
 # If not empty, --> use sum kernel: provide list of kernel as kernel with the
 # same size as SUM_KERNEL_PARAMS.
-SUM_KERNEL_SPECTRUM_PARAMS = [(6, 1), (9, 1)]
-SUM_KERNEL_KERNELS = [(LINEAR_KERNEL, 1e-2), (LINEAR_KERNEL, 1.0)]
+SUM_KERNEL_SPECTRUM_PARAMS = False #[(6, 1), (9, 1)]
+SUM_KERNEL_KERNELS = [(LINEAR_KERNEL, 1.0), (LINEAR_KERNEL, 1.0)]
 
 # Models to benchmark Train/Test evaluation.
 list_alpha = [1e-7, 1e-6, 5*1e-6, 1e-5, 5*1e-5, 7.5*1e-5, 1e-4, 2.5*1e-4, 5*1e-4, 1e-3, 5*1e-3, 1e-2, 5*1e-2]
 
 #list_alpha = [1,200, 4000]
 
-MODELS = [KernelLogisticClassifier(kernel=SUM_KERNEL_KERNELS, alpha=1.0),
+MODELS = [KernelLogisticClassifier(kernel=LINEAR_KERNEL, alpha=0.5),
           ]
           
 #     KernelSVMClassifier(kernel=GAUSSIAN_KERNEL, alpha=1e-7),
@@ -242,10 +244,12 @@ for exp in range(number_experiments):
 for k in range(3):
     test_accuracy_median = np.median(test_acc[k])
     test_accuracy_std = np.std(test_acc[k])
+    test_accuracy_max = np.max(test_acc[k])
     
     print("FILE " + str(k))
     print("Median : " + str(test_accuracy_median))
     print("STD : " + str(test_accuracy_std))
+    print("MAX : " + str(test_accuracy_max))
     
 
 
