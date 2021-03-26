@@ -150,8 +150,9 @@ for k in range(3):
         X_train, y_train, X_test = read_dataset_train_test_fast_kmer_process(k,
                                                                              kmer_size,
                                                                              number_misplacements,
-                                                                             scaling_features,
-                                                                             use_sparse_kmer_process)
+                                                                             scaling_features=scaling_features,
+                                                                             exhaustive_spectrum=exhaustive_spectrum,
+                                                                             use_sparse_matrix=use_sparse_matrix)
 
     checkpoint_1 = time.time()
     print("TIME FOR EXTRACTION " + str(k) + " : " + str(
