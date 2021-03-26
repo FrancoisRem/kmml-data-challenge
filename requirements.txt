@@ -1,0 +1,9 @@
+cvxpy>=1.1.10
+matplotlib>=3.3.4
+numpy>=1.20.1
+pandas>=1.2.3
+scipy>=1.6.0
+tqdm>=4.59.0
+
+# Uncomment to use the cross-validation in benchmark.py.
+# scikit-learn>=0.24.1
