@@ -8,7 +8,9 @@ Created on Sun Feb 28 13:58:29 2021
 
 import os
 
-from experiments.feature_extractor import *
+import pandas as pd
+from scipy.sparse import issparse
+
 from models import *
 from kmer_processor import *
 
