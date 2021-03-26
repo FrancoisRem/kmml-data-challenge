@@ -10,7 +10,7 @@ from models import *
 from utils import *
 
 # Path prefix constants
-DATA_FILE_PREFIX = "data/"
+DATA_FILE_PREFIX = "../data/"
 TRAINING_FILE_PREFIX = "Xtr"
 LABEL_FILE_PREFIX = "Ytr"
 FEATURE_FILE_PREFIX = "features/"
